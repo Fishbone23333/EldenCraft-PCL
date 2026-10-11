@@ -1,0 +1,283 @@
+# Campaign configuration
+
+EldenCraft's offline campaign uses vanilla Minecraft items and attacks, with a stamina bar, boss rewards and shops paid from the Elden Ring character's rune wallet. Native leveling and respec menus are suppressed while the campaign is enabled. Enchantments are excluded from the supplied balance and rewards.
+
+## Files and launching
+
+The source default is [`config/campaign.json`](../config/campaign.json). The Windows release installs an editable copy at `%LOCALAPPDATA%/EldenCraft/campaign.json` on first setup. Repeat setup keeps your edits. When an upgrade ships a changed template, setup saves your copy as `campaign.json.pre-<version>-<timestamp>.bak` beside it and installs the new template; reapply any edits you still want. Restart both games after editing it.
+
+The release's bundled `config/campaign.json` is a checksum-verified template;
+edit the runtime copy instead. With `-DataDirectory`, that copy is `campaign.json`
+inside the selected directory. The launcher prints the exact editable path.
+If you changed the bundled template, preserve your edits, restore the original
+from the release ZIP and apply the edits to the runtime copy.
+
+Both processes must load the same file and use the same bridge directory:
+
+| Setting | Purpose |
+| --- | --- |
+| `ELDENCRAFT_CAMPAIGN_CONFIG` | Absolute path to the campaign JSON |
+| `ELDENCRAFT_CAMPAIGN_DIR` | Shared directory for campaign messages and the native transaction journal |
+| `ELDENCRAFT_DATA_DIR` | Existing bridge data directory; campaign messages default to its `campaign` subdirectory |
+
+The release launcher sets these automatically. Developer deployment writes `config/eldencraft-campaign-link.json` inside the dedicated Minecraft profile so a separately launched Modrinth instance reads the same paths. A standalone Fabric run creates `config/eldencraft-campaign.json` from the mod's bundled defaults; connect that path to the native host before playing.
+
+Keep the Minecraft world, EldenCraft native save, campaign configuration and transaction journals together when making a backup. The release launcher creates verified campaign-journal backups alongside its save backups before launch or setup. Each Minecraft player is paired with one native character. A different character cannot use that player's campaign equipment or shop ledger. Use a separate Minecraft world for another native character.
+
+Start a new campaign with a fresh native character and Minecraft world. Existing sandbox inventories are preserved, and already completed bosses qualify for their configured rewards and capacities. Updating the mod does not turn an advanced sandbox save into an opening wooden-equipment playthrough.
+
+Invalid configuration is rejected. Keep the JSON below 256 KiB, use vanilla `minecraft:` item identifiers and give every boss and shop offer a unique ID. The number of remembrance entries must equal `progression.shares`. Configuration is loaded at startup; editing a running session does not change half of a purchase or combat exchange.
+
+## Balance
+
+`weapons` maps item IDs to fully charged base damage and attack speed. Damage includes the player's base attack point. These become Minecraft item attributes before ordinary attack cooldown and critical-hit calculations. Wooden swords, axes and spears, and shields, are unbreakable while the campaign is enabled. Other equipment retains vanilla durability.
+
+| Material | Sword damage | Axe damage | Spear damage | Sword speed | Axe speed | Spear speed |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Wood | 4 | 6 | 5 | 1.6 | 0.8 | 1.0 |
+| Stone | 5 | 8 | 6 | 1.6 | 0.8 | 1.0 |
+| Copper | 6 | 10 | 7 | 1.6 | 0.8 | 1.0 |
+| Gold | vanilla | vanilla | 8 | vanilla | vanilla | 1.0 |
+| Iron | 9 | 15 | 10 | 1.6 | 0.9 | 1.0 |
+| Diamond | 12.675 | 20.475 | 13.65 | 1.6 | 1.0 | 1.0 |
+| Netherite | 15.6 | 23.725 | 18.525 | 1.6 | 1.0 | 1.0 |
+
+Spears retain vanilla's jab, piercing targets, minimum/maximum reach, charging delay, relative-speed damage, enchantments and durability. A jab costs 18 stamina, including a miss. A charging contact costs 18 once for the component's group of hits, with at least ten ticks between paid contacts; vanilla's own contact cooldown still applies. Spear item-use movement retains its real `use_effects` sprint and speed rules. Wooden spears join the starter kit; every material is sold and can drop at its progression gate.
+
+The mace has 6 base damage, 0.6 attack speed and costs 28 stamina. It unlocks in shops and rare ordinary drops after Radahn, Morgott or Maliketh; Radahn also awards one. Vanilla calculates smash damage and enchantments from continuously observed native falling. Landing, teleports, map changes and bridge gaps reset that fall. A successful smash consumes it and sends the actual vanilla vertical rebound to native movement once, with fall protection for that impulse.
+
+`combat.nativeDamageScale` converts the resolved Minecraft hit into native HP damage. The supplied value is 36: a full wooden sword hit becomes 144 native HP and a netherite sword about 562, before any existing native damage-path behavior. The same scale converts Minecraft hazards that reach native enemies, after the hazard scales below. `combat.bowBaseDamage` (vanilla 2) and `combat.crossbowBaseDamage` (vanilla 4) are supplied at 3 and 6. Both retain ordinary arrow velocity and critical calculations. These are tuning values, still requiring live boss playtests before claiming equivalence to a specific level-100 Elden Ring build.
+
+The scale was chosen from native receipts recorded in Limgrave. Ordinary enemies there have 143–657 maximum HP and the Tree Sentinel 2,889:
+
+| Enemy max HP | 143 | 219 | 423 | 555 | 657 | 2,889 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Wooden sword hits at scale 30 | 2 | 2 | 4 | 5 | 6 | 25 |
+| Wooden sword hits at scale 36 | 1 | 2 | 3 | 4 | 5 | 21 |
+
+The character fights without flasks, so the supplied scale keeps fights shorter than an on-level Elden Ring build would need. At 36, Margit (about 4,200 HP) takes about 30 wooden-sword hits. Each milestone is fought with its preceding tier: Morgott with iron and Maliketh with diamond. Minecraft's faster swing cadence and the material ladder, growing 3.9 times from wood to netherite sword damage, provide the intended offensive progression. These are arithmetic baselines rather than measured full-playthrough timings.
+
+`combat.explosionDamageScale` and `combat.lavaDamageScale` (0–1000) multiply Minecraft hazard damage on native enemies before vanilla damage resolution. Explosions use 0.595; lava and fire remain at 0.075. Explosions cover TNT lit by the player and exploding creepers, which also catch nearby enemies; TNT ignited without a player hurts no native enemy. The lava scale also covers fire blocks, campfires and burning, so a lava-lit fire cannot replace the reduced lava hit. The resulting damage still depends on distance, exposure and native defenses. Damage to the player from the same hazards is unchanged. Campaign files without these fields use the respective defaults; set 1 for vanilla strength.
+
+Optional `combat.nativeEnemyDamageMultipliers` maps verified native NPC parameter IDs, as JSON keys, to incoming Minecraft damage multipliers from 0.01 to 1000. For example, `{ "123456": 2 }` doubles damage received by that NPC parameter row; this example ID is illustrative. Find actual IDs in native melee/target diagnostics for the supported game. The default map is empty. This supports tuning encounters such as Rykard, whose original HP budget assumes a special native weapon, without introducing a custom Minecraft item. The native sink bounds the final hit to its safe damage range.
+
+`armors` maps vanilla equipment IDs to damage-reduction percentages, for example `{ "armor": 10, "knockbackResistance": 0.1 }`. Each `armor` value accepts 0–100, including decimals, and means percentage points: a chestplate with `10` and a helmet with `5` give 15% total reduction, so a 100-damage hit becomes 85. The four equipped pieces add together, capped at 100%; broken pieces, pieces in the wrong slot and armor carried in inventory or hands do not count. This flat percentage applies equally to small and large native and Minecraft hits. Minecraft damage types that bypass armor still bypass it. `toughness` is optional legacy metadata and has no effect on damage reduction; `knockbackResistance` remains optional and keeps its usual meaning. Equipment and shop tooltips display percentages.
+
+The supplied values give full leather 7% damage reduction, copper 10%, chainmail 12%, iron 15%, diamond 28%, and netherite 36%. `combat.nativeIncomingDamageScale` defaults to 1 and adjusts overall pressure. Native incoming damage retains the game's existing resolution before the campaign percentage pass.
+
+This is a remaining combat limitation: native armor and stat defenses are not neutralized, so native class/loadout can add mitigation before Minecraft armor. The supported SDK has no verified authoritative defense override. `nativeIncomingDamageScale` can adjust overall pressure but cannot make differing native loadouts equivalent. A fresh Wretch with native armor kept unequipped provides a consistent starting baseline for campaign testing. Pure Minecraft-only incoming mitigation requires further verified native integration.
+
+Guard expenditure uses raw incoming damage in fixed Minecraft HP units, before armor. Vigor growth therefore does not reduce the stamina cost of blocking the same attack. Individual native hits wear Minecraft armor using vanilla durability rules; shields remain unbreakable and can still suffer a stamina guard break. Ordinary food regeneration is forwarded to native HP; the existing golden-apple regeneration path remains separate. An enchanted golden apple's Regeneration II is forwarded like food for its full 20 seconds (16 Minecraft HP), and its 16 absorption hearts absorb native hits like a totem's. Its Resistance and Fire Resistance only affect Minecraft hazards, because native hits use the campaign armor percentage alone.
+
+## Stamina
+
+| JSON field | Default | Meaning |
+| --- | ---: | --- |
+| `stamina.costs.sword` | 12 | Each sword attack, including a miss |
+| `stamina.costs.spear` | 18 | A jab or paid charging contact |
+| `stamina.costs.mace` | 28 | A mace attack |
+| `stamina.costs.axe` | 24 | Each axe attack |
+| `stamina.costs.bow` | 24 | A released arrow |
+| `stamina.costs.crossbow` | 24 | A fired shot, once per volley |
+| `stamina.costs.other` | 12 | Other melee attacks |
+| `stamina.regenPerSecond` | 20 | Recovery per second |
+| `stamina.regenDelaySeconds` | 0.5 | Delay after expenditure |
+| `stamina.guardBase` | 4 | Cost per blocked hit |
+| `stamina.guardPerDamage` | 1.5 | Additional cost per raw incoming Minecraft HP |
+| `stamina.guardRecovery` | 5 | Balance needed to raise an exhausted guard again |
+
+Swords and axes trade efficiency for throughput. A sword hit costs half as much stamina per point of damage, leaving more for blocking. The axe's slower cooldown lets stamina recover between swings, so it deals slightly more in a 1.5 s opening (wood: 14 against 12) and over a 10 s exchange (56 against 48 at mid-game capacity).
+
+Holding a shield or drawing/loading a ranged weapon pauses regeneration. Insufficient stamina prevents a new attack or shot. A shield hit costs `guardBase + guardPerDamage` per raw damage. If the remaining balance covers it, the hit is fully blocked. Otherwise stamina absorbs only the share it pays for, drops to zero, and the rest of the hit goes through as ordinary damage after armor. Either way, emptying stamina with a block breaks the guard. The shield is knocked down with vanilla's shield-break sound and a hotbar cooldown lasting until stamina reaches `guardRecovery` again, and the stamina bar shakes, flashes and shows "Guard broken". While a shield is held, a small shield icon beside the crosshair shows its state in the stamina colors: a faint outline when available, filling during vanilla's 0.25 s raise delay, solid with a short flash once it blocks, and the exhausted color refilling while a broken guard recovers. Native guard events include blocked hits with zero HP loss. Sprinting, jumping, normal Minecraft movement, mining and placing blocks do not spend this stamina; the swings of holding attack on a block (Minecraft or Elden Ring terrain) are never charged as missed attacks.
+
+Shield activation retains vanilla's raise delay and frontal blocking rule. The client reports its actual raised shield; the integrated server separately verifies a held, usable blocking item and available stamina. The server's later copy of the raise timer does not impose a second delay on an already admitted client guard. A brief combat mailbox read miss preserves an already raised shield within the last observation's freshness window; reconnecting while the shield is raised accepts that current held state without replaying attacks. Explicit release, menus, expired observations, item cooldowns and exhausted stamina still prevent blocking. Publishing fresh shield and campaign state uses short state locks so a simultaneous update cannot itself let a hit through.
+
+During active Minecraft gameplay, native weapon attacks, guard, skills and item use are reserved by the bridge. The native Use Item binding, normally R, cannot trigger a flask. These changes use Elden Ring's existing logical bindings and restore them when Minecraft gameplay capture ends.
+
+Verified native death refills stamina for the next attempt. Merely switching windows or losing the bridge does not refill it.
+
+## HUD and popups
+
+Top-level `hud` controls presentation independently of combat costs and capacities. Existing configuration files without this section use the same defaults. All dimensions and positions use Minecraft GUI pixels; Minecraft's GUI scale controls their on-screen size. Restart Minecraft after editing.
+
+The stamina bar has a pixel frame, green recovery shading, an amber exhausted state and a short trailing segment after expenditure. It sits above the vanilla health/armor rows, accounting for additional health and absorption hearts. The native boss bars sit at the top center, use Minecraft boss textures and localized Elden Ring names, and show a delayed yellow damage trail behind current red HP. They follow the native game's three registered boss encounters, including simultaneous fights and phase changes, and read current actor HP independently of the hidden native HUD's render state. Names come from the native message repository through its language and archive tables; an unavailable name uses the label "Boss" while keeping the verified health bar visible. Bars disappear when registration clears, the actor dies or unloads, or the bridge becomes inactive. Ordinary Minecraft boss bars retain their own rows. Native rows that cannot fit above the lower HUD are omitted; reduce GUI scale if an unusually small viewport has insufficient room.
+
+| JSON field | Default | Meaning |
+| --- | ---: | --- |
+| `hud.stamina.enabled` | `true` | Show the stamina bar |
+| `hud.stamina.width`, `height` | 182, 9 | Outer frame dimensions |
+| `hud.stamina.offsetY` | 0 | Shift vertically from the health-aware position |
+| `hud.stamina.showNumbers` | `true` | Show current / maximum stamina above the bar |
+| `hud.stamina.trailHoldSeconds` | 0.12 | Pause before the drain trail catches up |
+| `hud.stamina.trailPerSecond` | 1.75 | Trail movement in fractions of a full bar per second |
+| `hud.stamina.recoveryHighlightSeconds` | 0.12 | Keep recovery shading steady between stamina updates; 0 disables it |
+| `hud.bossBar.enabled` | `true` | Show native boss bars |
+| `hud.bossBar.width`, `height` | 320, 10 | Outer frame dimensions |
+| `hud.bossBar.top` | 12 | Top of the first boss name |
+| `hud.bossBar.spacing` | 8 | Gap between boss rows |
+| `hud.bossBar.showNumbers` | `false` | Include current / maximum native HP beside the name |
+| `hud.bossBar.damageHoldSeconds` | 0.6 | Keep yellow damage visible before it shrinks |
+| `hud.bossBar.damageTrailPerSecond` | 0.35 | Yellow trail movement in fractions of a full bar per second |
+| `hud.hideAchievementPopups` | `true` | Suppress Minecraft advancement/achievement toasts in EldenCraft |
+| `hud.hideRecipePopups` | `true` | Suppress recipe unlock toasts in EldenCraft |
+| `hud.hideTutorialPopups` | `true` | Suppress movement, mining and other tutorial cards in EldenCraft |
+
+Stamina colors are `fill`, `exhausted`, `trail`, `border`, `background` and `text`. Boss colors are `fillTint`, `trailTint`, `border`, `background` and `text`; the health tint multiplies Minecraft's white boss texture, while the trail tint multiplies its yellow texture. The default health tint is deep red. Colors accept `#RRGGBB` or `#AARRGGBB`. Widths shrink to fit the viewport. Damage trails reset after healing, phase/instance changes and stale observations rather than carrying old damage into a new fight.
+
+Popup suppression clears queued and already-visible cards, including an indefinitely displayed movement tutorial. It preserves actual advancements, XP, recipe unlocks and tutorial progress without changing Minecraft's global tutorial setting. System alerts remain available. These flags control Minecraft toasts; Steam's external achievement overlay uses Steam's own settings.
+
+Boss diagnostics are saved beside the campaign observations as `campaign-boss-debug.json`. The release location is `%LOCALAPPDATA%/EldenCraft/runtime/data/campaign/campaign-boss-debug.json`. This bounded trace records registered slots, current source HP, frontend tag state, name lookup status and admission reasons; recent encounter data remains available after closing the game. Failed name lookups include archive header and count diagnostics, and a fallback label is identified as `name_source: "fallback"`. When investigating a missing bar, check the active `campaign-host.json` list and this trace while using the same installed Minecraft/native release.
+
+Native incoming hits also produce `Minecraft shield hit:` entries in `eldencraft-native.log`. These include the block decision, attacker position and direction, shield facing, guard lease age, campaign state age, stamina and resulting HP loss. The hook collects a bounded queue and the existing worker writes the log outside the damage callback. These observations help distinguish a dropped guard from a rear attack, stale state or previously spent stamina awaiting acknowledgment.
+
+## Remembrance progression
+
+The 15 supplied remembrance bosses each contribute one unique share. A victory advances the equivalent attributes proportionally:
+
+```text
+fraction = min(unique_remembrance_victories, shares) / shares
+vigor = startVigor + fraction * (endVigor - startVigor)
+endurance = startEndurance + fraction * (endEndurance - startEndurance)
+Minecraft maximum HP = baseMinecraftHealth * HP(vigor) / HP(startVigor)
+maximum stamina = Stamina(endurance)
+```
+
+`healthCurve` and `staminaCurve` are editable ordered arrays of `{ "level": ..., "value": ... }` anchors. Values interpolate between anchors. The default starts at equivalent Vigor 10 / Endurance 10 and ends at Vigor 60 / Endurance 30. The supplied health curve is Elden Ring's Vigor curve plus a flat 414 HP: 828 native HP and 40 internal Minecraft HP at the start, 2314 native HP and approximately 111.79 internal Minecraft HP at the end, with 103 stamina. The HUD presents this as 10 full hearts initially and at most 30 full hearts (three rows), mapping capacity growth between these endpoints and preserving the current health fraction. Absorption and the stamina bar's layout use the same display scale. This affects HUD reads only: maximum-health attributes, native HP, damage, guard costs, food, apples, absorption pools and totems keep their existing arithmetic. Each remembrance still adds the same native HP as the unmodified curve. One internal Minecraft HP remains 20.7 native HP. The supplied stamina curve is campaign tuning, starting at 54 and ending at 103; its values can be changed independently of the Endurance labels. Native attribute levels, damage stats and equip load are not awarded. Capacity growth preserves current HP rather than healing it.
+
+Boss state comes from native completion event flags, not remembrance inventory items. The native journal retains unique victories across sessions and NG+ so neither duplicated remembrances nor repeated clears award more capacity. Optional bosses increase capacity; completing the main route does not require every optional remembrance.
+
+The unmodified HP anchors (414 at Vigor 10, 1900 at Vigor 60) are corroborated by [Bandai Namco's attribute explanation](https://www.bandainamcoent.com/news/elden-ring-introduction-part-2-advanced-stats). Native event flags were checked against the [authored modding flag reference](https://soulsmodding.com/doku.php?id=er-refmat:event-flag-list) and [ER Documentation](https://github.com/vawser/ER-Documentation/blob/main/Info%20-%20Event%20Flags%20-%20Gameplay.txt).
+
+## Rewards and gathering
+
+`starterItems` and each boss's `rewards` are arrays of `{ "item": "minecraft:iron_sword", "count": 1 }`. Set a boss's `eventFlag` to its final native completion flag and `remembrance` to whether it contributes a capacity share. Optional `experience` awards Minecraft XP once with that boss's first-clear receipt (0–1,000,000). The defaults include 159 encounters; ordinary and alternate variants do not count as remembrances. The starter kit includes three golden apples. Every minor boss adds a golden apple to its reward, while Margit, Golden Godfrey, the Godskin Duo, Gideon and most remembrance bosses add enchanted golden apples; the final Elden Beast reward is an elytra.
+
+Margit grants a stone sword and leather chestplate and unlocks crafting; Godrick grants a copper sword and copper armor. Defeating either Rennala or Radahn grants and unlocks iron; Morgott grants and unlocks diamond; Maliketh grants and unlocks netherite. The same milestones gate merchants' equipment, ingredients and food tiers. Higher milestones also unlock lower-tier replacements and crafting support, so skipping an earlier boss does not strand an alternate route. Wooden equipment is available before Margit. Crafting access and raw logs are gated so ordinary stone gathering does not immediately bypass the opening gear tier.
+
+Boss equipment and upgrade-material rewards are capped at the highest unlocked milestone when the unclaimed reward is delivered. Optional regions can therefore be visited out of order without bypassing the material ladder. A reward keeps its original maximum tier: returning to an early boss after Maliketh does not turn its copper gear into netherite. Stone and wooden armor become leather; locked upgrade materials become the available tier's crafting material. Utility rewards such as pearls, crossbows and crafting stations are preserved. Maliketh supplies a netherite sword, boots and four ingot/template pairs, making a full armor set and another tool attainable before the final bosses. Existing inventories and claimed reward receipts are preserved on upgrade.
+
+The supplied Stormveil entries use encounter completion flags: `10000850` for Margit and `10000800` for Godrick. Earlier configurations used global flags `9101` and `9100`, whose published mappings conflict and can credit Godrick after Margit. For an existing installation, update those two `eventFlag` values in the preserved campaign file and restart both games. An already recorded incorrect victory and its Minecraft reward receipt require a separate save repair; changing the flag alone does not clear them.
+
+The ten hardest optional Limgrave and Weeping Peninsula field bosses (Tree Sentinel, Crucible Knight, Bell Bearing Hunter, both Night's Cavalry, Flying Dragon Agheel, both Deathbirds, Bloodhound Knight Darriwil and the Ancient Hero of Zamor) have chainmail pieces as their maximum reward. The milestone cap makes these leather before Godrick, copper after Godrick, and chainmail after Rennala or Radahn. Chainmail (12% reduction for a full set) cannot be crafted or bought and sits between copper (10%) and iron (15%).
+
+Rewards wait when the complete batch cannot fit in the inventory. Claims are saved with the items in the Minecraft player save, preventing a separate claims file from disagreeing with inventory. Removing a boss entry does not remove previously granted equipment. Changing an existing reward ID does not retroactively grant that reward again.
+
+`mining.allowedBlocks` controls ordinary native-terrain gathering. It defaults to stone/cobblestone, bricks and dirt variants. Wood, iron ore and other progression materials are excluded. `mining.regrowTicks` sets the delay before a sampled cell can yield another item; 12000 ticks is ten minutes at 20 TPS. Mining supplies an item without deleting Elden Ring's terrain.
+
+`mining.resourceZones` can override a hit material in a particular native map. The defaults map ore surfaces in eight base-game tunnels to lapis ore. Each rule contains a packed `sourceMap`, `hitMaterials` and vanilla `block` ID. Map bytes are `(area << 24) | (block << 16) | (region << 8) | index`; for example `m32_01_00_00` is 536936448. Only matched ore surfaces gain this exception, and ordinary Minecraft tool/drop rules still apply. The future enchantment economy can use this lapis without changing the current baseline damage balance.
+
+Confirmed lethal Minecraft melee or ranged hits award native-enemy XP using top-level `experience`: `mobBase` plus `mobPerNativeHp` times the target's maximum HP, capped by `maxPerKill`. Defaults are 3, 0.005 and 100. Boss first-clear XP is additional. Cumulative native kill receipts and a checkpoint in the Minecraft player save prevent replaying observed kills as repeated XP. A new native session starts a fresh observation baseline; target disappearance alone does not count as a kill.
+
+## Combat potions
+
+The catalog sells Healing, Regeneration, Strength, Swiftness, Leaping, Slow Falling, Fire Resistance, Water Breathing and Turtle Master, with longer or stronger variants gated by progression. Splash and lingering Healing, Regeneration, Poison, Harming, Weakness and Slowness are also available. The shop shows the actual potion name, effect strength and duration. Drinking, brewing, splash falloff, cloud timing, effect replacement, expiration and milk remain vanilla behavior.
+
+Actual server healing and regeneration update native player HP. Strength and Weakness affect vanilla weapon damage. Resistance reduces native enemy attacks after campaign armor and before absorption; Turtle Master's Slowness remains its movement tradeoff. Swiftness, Slowness and Leaping change native foot movement, and Slow Falling changes descent and suppresses fall damage. Fire Resistance and Water Breathing continue through the existing vanilla hazard authority. Enemy proxies forward Poison and Harming damage, Resistance mitigation, movement effects and Strength/Weakness attack modifiers to their exact native generation. Native AI visibility and healing native enemy HP are outside this effect bridge.
+
+Shops, starter items, boss rewards and loot entries accept an optional vanilla potion ID:
+
+```json
+{"item": "minecraft:splash_potion", "potion": "minecraft:strong_harming", "count": 1}
+```
+
+Use `min`, `max` and `weight` instead of `count` for loot, and add `id`, `price` and optional gates for a shop offer. `potion` is supported on `minecraft:potion`, `minecraft:splash_potion`, `minecraft:lingering_potion` and `minecraft:tipped_arrow`. Registry validation rejects unknown potions. Paid purchase recovery saves the exact variant; different variants use separate inventory capacity. Campaign JSON is bounded to 256 KiB.
+
+Thrown player potions use the existing bounded, observed projectile trace and native collision checks. Lingering Harming requires a real cloud created during a verified potion impact, its original paired owner/session/map, and the actual cloud effect tick. Movement and enemy modifiers expire with their original short bridge leases; reconnecting cannot replay an old mace rebound.
+
+## Enemy drops
+
+Confirmed lethal Minecraft hits on ordinary native enemies also roll the top-level `enemyLoot` table. Minor and major bosses never roll it; they keep their authored `rewards`, which always go straight to the inventory. Native classifies an enemy as a boss while it is still alive, when the frontend has registered its boss health bar or its NpcParam awards runes as a boss.
+
+By default, drops land on the floor where the enemy died, like Elden Ring's item drops and vanilla mob drops, and are picked up by walking over them. Native reports the death point in the shared world's stable region frame. Minecraft only drops there when that point lies inside the sampled terrain around the player (about 16 m each way), since items need that hidden terrain to rest on. Otherwise, for example after a long-range bow kill, the drops go to the inventory. Unclaimed drops follow vanilla rules: they despawn after five minutes and can fall away once the player walks far enough for the terrain under them to leave the sampled area. Elden Ring's terrain sampling is approximate, so a drop can rest slightly above or below the visible ground.
+
+With `dropOnFloor: false`, every drop goes straight into the inventory with the pickup sound and a short "Looted ..." message. If the inventory is full, the remainder lands at the player's feet, as with vanilla `/give`.
+
+| JSON field | Default | Meaning |
+| --- | ---: | --- |
+| `enemyLoot.dropChance` | 0.4 | Chance that each roll yields an item; 0 disables drops |
+| `enemyLoot.minNativeHp` | 100 | Enemies with less maximum HP drop nothing |
+| `enemyLoot.extraRollNativeHp` | 1500 | One extra roll per this much enemy maximum HP; 0 disables extra rolls |
+| `enemyLoot.maxRolls` | 3 | Roll cap (1–8) |
+| `enemyLoot.dropOnFloor` | `true` | Drop items where the enemy died; `false` delivers them to the inventory |
+| `enemyLoot.entries` | see below | `{ "item", "min", "max", "weight" }` with optional `potion`, `unlock_any` / `unlock_all` boss gates |
+
+Each successful roll picks one unlocked entry by weight, then a count from `min` to `max`. Weights are relative, so a newly unlocked entry also makes the existing ones a little rarer. Gates must name configured bosses. Omitted fields, or a missing `enemyLoot` section in an older campaign file, use the defaults:
+
+| Item | Count | Weight | Gate |
+| --- | ---: | ---: | --- |
+| Bread | 1–2 | 18 | |
+| Apple | 1–2 | 10 | |
+| Baked potato | 1–2 | 6 | |
+| Rotten flesh | 1–3 | 14 | |
+| Bone | 1–2 | 10 | |
+| String | 1–2 | 8 | |
+| Stick | 1–3 | 8 | |
+| Feather | 1–2 | 7 | |
+| Flint | 1 | 6 | |
+| Arrow | 2–4 | 8 | |
+| Leather | 1 | 4 | |
+| Golden apple | 1 | 4 | |
+| Enchanted golden apple | 1 | 1 | |
+| Cooked beef | 1–2 | 14 | Any iron-tier victory (as the shop) |
+| Golden carrot | 1–2 | 8 | Any diamond-tier victory (as the shop) |
+| Wooden / stone / copper spear | 1 | 1 each | Respective material gate |
+| Golden / iron / diamond / netherite spear | 1 | 0.5 each | Respective material gate |
+| Mace | 1 | 0.25 | Radahn, Morgott or Maliketh |
+| Healing / Swiftness / Leaping potion | 1 | 5 / 2 / 2 | Opening |
+| Regeneration / Fire Resistance / Slow Falling potion | 1 | 3 / 2 / 2 | Copper tier |
+| Healing II / Strength / Turtle Master potion | 1 | 2 / 2 / 1 | Iron tier |
+| Splash Poison / Weakness / Slowness / Harming | 1 | 1 each | Copper; Harming waits for iron |
+| Lingering Poison / Weakness / Slowness / Harming | 1 | 1 each | Diamond tier |
+
+An ordinary Limgrave enemy drops something on 40% of kills; about one in 70 kills drops a golden apple and one in 285 an enchanted golden apple. Late-game enemies have enough HP for two or three rolls and the better food, matching the larger health pool that food has to refill. String, sticks, feathers and flint become bows and arrows once Margit grants a crafting table. The table deliberately excludes logs, metal nuggets and ingots, gunpowder and paper, so drops never bypass a material tier, the crafting gate or the deferred enchanting economy. Drops supplement merchants; buying food remains the dependable way to prepare for a boss.
+
+Each native session numbers ordinary kills. Minecraft saves its loot cursor in the same world save as the delivered or dropped items, so a reload cannot replay a kill. Each roll is seeded by the character, session and kill, so a Minecraft crash before the save delivers the same items again rather than a reroll. Native keeps the latest 64 kills; kills older than that before Minecraft observes them are forfeited, as are kills from before a new native session's baseline.
+
+Lapis ore also follows vanilla mining XP rules. Merchants sell an enchanting table, books and bookshelves after early major victories. Vanilla enchanting remains available, but the supplied weapon and boss balance does not assume enchantments.
+
+## Shops
+
+The merchant's Purchase row is shown as **Shop** and its native Purchase command opens the custom Minecraft screen; the native Sell row is hidden. Talk and quest dialogue continue through Elden Ring. The shop uses dark pixel panels with bright cream text and gold rune prices. It displays vanilla item icons, prerequisites and stock, with single-bundle and stack purchases. Inventory delivery runs on the integrated server.
+
+The catalog and selected-item details have separate panels, with purchase feedback above the vanilla inventory grid. Page buttons and scrolling navigate the catalog. Bulk labels show the quantity currently affordable within stock and item stack limits; unavailable purchases explain their reason in the feedback strip or tooltip. Smaller GUI dimensions show a readable prompt to increase window size or reduce GUI scale, with Close and Escape available.
+
+```json
+{
+  "id": "regional_shop",
+  "title": "Merchant",
+  "merchant_ids": ["100000"],
+  "offers": [{
+    "id": "regional_iron_sword",
+    "item": "minecraft:iron_sword",
+    "count": 1,
+    "price": 6500,
+    "stock": -1,
+    "unlock_any": ["godrick", "rennala"],
+    "unlock_all": []
+  }]
+}
+```
+
+Put these entries in top-level `shops`. `merchant_ids` contains native shop-range IDs, as strings. Exact merchant matches take priority over the `"*"` fallback. The supplied fallback gives all recognized merchants the same 131-offer campaign catalog; replace or supplement it with regional catalogs. `count` is the number of items in a bundle, `price` the rune cost per bundle, and `stock` the number of bundles available per native character (`-1` means unlimited). `unlock_any` requires at least one listed victory; `unlock_all` requires all listed victories. Empty arrays impose no condition.
+
+Standard vanilla firework rockets are available from the start in bundles of eight for 400 runes, with unlimited stock. These flight rockets retain their default vanilla components and work with the elytra.
+
+The native host independently validates merchant context, prerequisites, configured price, stock and wallet balance. It writes a durable purchase intent, debits the real wallet and requests a native save. Minecraft delivers only after the confirmed debit. The inventory save records a purchase UUID before shop stock commits, allowing safe retries after a disconnect or crash. An ambiguous native save quarantines the purchase instead of debiting again or delivering free items. Keep journals when restoring paired saves; manually mixing different save generations cannot be reconciled automatically.
+
+Native save discovery uses the dedicated `EldenCraft.sl2`. If it cannot be found uniquely, set optional top-level `nativeSavePath` to its absolute path. Purchases wait for save discovery rather than accepting an unrelated Elden Ring save as proof.
+
+An offer can optionally specify `native_item_lot` for an existing native **map item lot** containing Goods/key rewards, and `native_name` for its display name. Its vanilla `item` is only the GUI icon in this case, and `count` must be 1. Native validates the lot and grants it through the native dialogue award command; Minecraft does not create a substitute quest item. Weapon and armor lots are not supported. Use verified lot IDs appropriate to the supported game, including their award flags. The default catalog contains Minecraft goods only and leaves native quest-key acquisition in the world intact.
+
+Golden apples (500 runes) and enchanted golden apples (3,000) are sold from the start with unlimited stock, next to bread, so a boss attempt can always be restocked. Totems of undying (5,000) are sold from the start with unlimited stock; one must be held in a hand to cheat a lethal hit, so it competes with the shield or weapon slot. TNT (800 each) and flint and steel (200) are also available from the start.
+
+Selling is not enabled in this baseline. Repeat purchases of food, ammunition, replacements and repair/crafting materials provide ongoing rune sinks without creating profits from renewable mined blocks. Special finite stock and price/gate changes are configurable.
+
+Ingredients set the real price of equipment: copper and iron ingots and diamonds craft the same gear the shop sells once a crafting table is available. Ready-made weapons, tools and armor therefore cost 1.25 times their cheapest legal ingredients, a convenience premium rather than a trap. Netherite gear is priced against its upgrade route: the diamond piece plus one netherite ingot (45,000) and one upgrade template (30,000). The template price sits just above the vanilla duplication recipe (seven diamonds, 24,500, plus netherrack from a Nether event). One upgrade costs about a third of a late remembrance payout such as Maliketh's. Conformance checks that no ready-made piece undercuts its ingredients.
+
+## Development and verification
+
+`debugKits` defaults to false. Set it true only for deliberate testing of the dedicated offline world. `enabled: false` disables campaign progression and merchant interception; it does not erase granted items, claims or journals.
+
+Run `scripts/eldencraft.ps1 build-minecraft --offline`, `scripts/eldencraft.ps1 test-native --offline`, the Python tests and `tests/windows-launcher.Tests.ps1`. Campaign conformance covers configuration, progression caps, stamina, JSON observations and purchase recovery. Native integration is pinned to the supported executable and offline session.
+
+Live acceptance still needs a complete route, all remembrance phase completions, native save interruption, inventory saturation, shield pressure, ranged combat, food recovery, rest/death recovery and optional boss mechanics. Existing passthrough limits such as native AI navigation around placed blocks and incomplete native potion/firework effects remain relevant. Do not treat automated tests as proof of final combat balance or a completed live playthrough.

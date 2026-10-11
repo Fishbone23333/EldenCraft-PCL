@@ -1,0 +1,25 @@
+name: PCL checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  bridge:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build Minecraft bridge and run conformance checks
+        working-directory: minecraft
+        run: ./gradlew.bat build
+      - name: Test PCL installer integrity
+        working-directory: trials/pcl-adapter
+        run: python -m unittest test_install_pcl test_optimized_bridge test_pcl_paths
+      - name: Test F8 helper
+        shell: powershell
+        run: ./trials/pcl-adapter/test-character-switch.ps1

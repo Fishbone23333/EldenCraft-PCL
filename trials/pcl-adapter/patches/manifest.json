@@ -1,0 +1,9 @@
+{
+  "file": "eldencraft-bridge-0.25.5-pcl.2.jar",
+  "sha256": "437178c304c0e3d4ebffdac98cf49fb6814135ebedbd5792f0e03d328851744d",
+  "version": "0.25.5-pcl.2",
+  "upstream": "SocketByte/EldenCraft v0.25.5",
+  "baseCommit": "0ed8381cb19b46e7f89965deeb3ed9d04a70a58f",
+  "builtAt": "2026-10-11T18:54:48.7493165+08:00",
+  "checks": "Full Gradle build and all conformance suites passed; enemy head health-bar geometry, F5 camera, LOS, freshness and config regression passed; PCL stamina/bow/scroll optimizations retained."
+}
