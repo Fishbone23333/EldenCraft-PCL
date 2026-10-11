@@ -18,58 +18,137 @@
 
 F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当前角色的控制/显示模式，使用独立 `EldenCraft.sl2`，不会加载原版存档中的其他角色。
 
-## 环境要求
+## 第一步：准备哪些版本
 
-- Windows 10（19041 或以上）/ Windows 11，64 位。
-- Steam 艾尔登法环 **2.7.1.0**；启动前登录 Steam，安装器会校验游戏 EXE。
-- PCL 2，包含 `Plain Craft Launcher 2.exe`；本机使用 **2.13.1.1**。
-- Python **3.12 或以上**，用于首次安装；常规游玩无需 Python 常驻。
-- 首次安装需要网络。MC **26.3**、Fabric Loader **0.19.5**、Fabric API **0.161.0+26.3**、Java **25** 由安装器下载到专用目录。
+系统要求：**Windows 10（内部版本 19041 或以上）或 Windows 11，64 位**。两款游戏会同时运行；首次安装和下载资源需要联网，游玩桥接使用离线单人模式。
 
-两款游戏同时运行，性能取决于硬件和游戏设置。桥接支持离线单人；Minecraft 账号使用自己的 PCL 配置。
+### 需要自己下载或准备的 4 项
 
-## 安装
+| 项目 | 使用版本 / 文件 | 下载入口 | 下载后怎么处理 |
+| --- | --- | --- | --- |
+| 本仓库 | `main` 分支，包含 **`0.25.5-pcl.2`** 优化 JAR | [直接下载 EldenCraft-PCL-main.zip](https://github.com/Fishbone23333/EldenCraft-PCL/archive/refs/heads/main.zip) | 完整解压，例如放到 `D:\Games\EldenCraft-PCL-main` |
+| 艾尔登法环 | **Steam Windows 版**；当前适配的 `eldenring.exe` **产品版本为 `2.7.1.0`** | [Steam 商店](https://store.steampowered.com/app/1245620/ELDEN_RING/) | 在 Steam 安装游戏，记住 `Game\eldenring.exe` 的路径 |
+| PCL 启动器 | 本机验证版本 **`2.13.1.1`**，推荐使用相同版本 | [PCL 官方下载入口](https://meloong.com/pcl) | 放在独立目录，例如 `D:\PCL`；脚本要求文件名为 `Plain Craft Launcher 2.exe` |
+| Python | 推荐 **`3.12.10`，Windows 64 位**；脚本最低支持 3.12 | [Python 3.12.10 64 位安装器](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe) | 安装时勾选 **Add python.exe to PATH**，然后点击 Install Now |
 
-1. 下载仓库 ZIP 并解压，或运行：
+**版本核对：**法环的 `2.7.1.0` 是 Windows 文件“属性 → 详细信息 → 产品版本”，不是要求标题画面显示相同数字。脚本还会验证 EXE 的 SHA256；其他法环版本不能直接套用。PCL 官网会更新版本，如果下载的是其他版本，本文的启动流程仍以 `2.13.1.1` 为验证基准，其他版本尚未逐一验证。
 
-   ```powershell
-   git clone https://github.com/Fishbone23333/EldenCraft-PCL.git
-   cd EldenCraft-PCL
-   ```
+Python 已安装且为 3.12 或以上时可继续使用。下载的 PCL 程序如果叫 `PCL2.exe` 等其他名称，请将它重命名为 **`Plain Craft Launcher 2.exe`**，或自行修改两份脚本中的程序名。
 
-2. 复制 `trials/pcl-adapter/local.example.json` 为 `trials/pcl-adapter/local.json`，填写 PCL 路径。`game_path` 留空时从 Steam 安装记录查找法环，也可填写绝对路径：
+### 安装脚本会自动下载的组件
 
-   ```json
-   {
-     "pcl_root": "D:/PCL",
-     "game_path": "D:/SteamLibrary/steamapps/common/ELDEN RING/Game/eldenring.exe",
-     "release_root": "trials/EldenCraft-0.25.5",
-     "data_root": "trials/EldenCraftData"
-   }
-   ```
+下面这些组件**不需要在 PCL 的“下载”页手动安装**，也不需要逐个寻找 JAR 或 DLL：
 
-   相对路径以仓库根目录为基准。`local.json` 仅保存在本机。PCL 文件名不同的情况下，需同步调整 `start-pcl.ps1` 和 `setup-pcl.ps1` 中的可执行文件名。
+| 组件 | 固定版本 | 安装方式 |
+| --- | --- | --- |
+| 上游 EldenCraft 原生组件 | **`v0.25.5`**，文件 `EldenCraft-0.25.5-windows-x64.zip` | 脚本从上游 GitHub 下载并解压 |
+| Minecraft Java Edition | **`26.3`** | 脚本从 Mojang 下载游戏、库和资源 |
+| Fabric Loader | **`0.19.5`** | 脚本从 Fabric 获取启动配置 |
+| Fabric API | **`0.161.0+26.3`** | 脚本下载并放入专用实例的 `mods` |
+| Java 运行时 | **Temurin JRE `25.0.4.1+1`，Windows x64** | 脚本下载并复制到专用实例的 `java` |
+| me3 | **`0.13.0`** | 脚本下载，用于离线启动法环 |
+| ReShade | **`6.8.0 Addon`** | 脚本下载并准备画面合成运行组件 |
+| MC 桥接 Mod | **`eldencraft-bridge-0.25.5-pcl.2.jar`** | 本仓库已经包含，脚本校验后安装 |
 
-3. 关闭两款游戏和 PCL，双击 **`SETUP-EldenCraft-PCL.cmd`**。
+最终使用的 MC 实例名称是 **`EldenCraft-26.3-Fabric-0.19.5`**。`1.21.1` 等其他 MC 版本不能替代这个实例；本教程使用 PCL 启动，无需另外安装 Prism。
 
-   安装器下载并校验上游发布包、Java、me3 和 ReShade，再安装 Minecraft 专用实例和本仓库的优化 JAR。不会启动游戏；原生运行组件位于 `data_root/runtime`，法环安装目录保持原样。
+## 第二步：首次安装
 
-   Python 不在 PATH 中时：
+### 1. 解压到本地文件夹
 
-   ```powershell
-   .\SETUP-EldenCraft-PCL.cmd -PythonCommand "C:\Python312\python.exe"
-   ```
+完整解压 `EldenCraft-PCL-main.zip`，进入能看到下面文件的目录。不要在 ZIP 内直接双击脚本：
 
-   也可提前将完整的上游 [Windows 发布包](https://github.com/SocketByte/EldenCraft/releases/download/v0.25.5/EldenCraft-0.25.5-windows-x64.zip) 解压到 `release_root`，该目录应直接包含 `release-manifest.json` 和 `payload`。安装器仍会验证文件。
+```text
+D:\Games\EldenCraft-PCL-main\
+├─ README.md
+├─ SETUP-EldenCraft-PCL.cmd       首次安装 / 更新
+├─ START-EldenCraft-PCL.cmd       日常启动，默认 GPU 模式
+├─ START-EldenCraft-PCL-CPU.cmd   GPU 画面异常时使用
+└─ trials\pcl-adapter\
+   ├─ local.example.json
+   └─ patches\eldencraft-bridge-0.25.5-pcl.2.jar
+```
 
-## 启动和操作
+PCL 程序放在另一个目录，例如 `D:\PCL\Plain Craft Launcher 2.exe`。可以先打开 PCL，设置平时使用的 Minecraft 账号，设置完成后关闭 PCL。
 
-1. 关闭现有 Minecraft、法环和 PCL，登录 Steam。
-2. 双击 **`START-EldenCraft-PCL.cmd`**，脚本打开 PCL 并选择 `EldenCraft-26.3-Fabric-0.19.5`。
-3. 在 PCL 点击“启动游戏”，保持脚本窗口打开。MC 自动进入专用世界，桥接加载后脚本启动法环。
-4. 在法环中载入或创建角色，开始游玩。
+### 2. 填写 PCL 和法环路径
 
-**无需先手动启动两款游戏。** 从专用入口打开 PCL，Minecraft 才能继承桥接环境变量。
+打开 `trials\pcl-adapter`，复制一份 `local.example.json`，将副本命名为 **`local.json`**，用记事本编辑。打开资源管理器的“文件扩展名”显示，确认不是 `local.json.txt`。
+
+例如 PCL 位于 `D:\PCL`、法环位于 `D:\SteamLibrary` 时：
+
+```json
+{
+  "pcl_root": "D:/PCL",
+  "game_path": "D:/SteamLibrary/steamapps/common/ELDEN RING/Game/eldenring.exe",
+  "release_root": "trials/EldenCraft-0.25.5",
+  "data_root": "trials/EldenCraftData"
+}
+```
+
+| 配置项 | 填写方法 |
+| --- | --- |
+| `pcl_root` | **PCL 程序所在文件夹**，不要填写 EXE 文件，也不要填写 `.minecraft` 目录 |
+| `game_path` | **`eldenring.exe` 的完整文件路径**；可在 Steam → 游戏属性 → 已安装文件 → 浏览中找到 `Game` 文件夹。留空 `""` 则由脚本从 Steam 安装记录查找 |
+| `release_root` | 保持示例值，下载的上游发布包放在这里 |
+| `data_root` | 保持示例值，运行配置、组件、日志和备份放在这里 |
+
+示例路径中的盘符和目录要换成自己的。JSON 中建议使用 `/`；如用 `\`，需写成 `\\`。后两个相对路径以本仓库根目录为基准。
+
+### 3. 运行安装入口
+
+关闭 Minecraft、法环和 PCL，在仓库根目录双击 **`SETUP-EldenCraft-PCL.cmd`**。保持窗口打开，等待所有下载和校验完成；首次需要下载大量 MC 资源，耗时取决于网络。
+
+看到下面这行才表示安装完成：
+
+```text
+Setup complete. Run START-EldenCraft-PCL.cmd, then click Launch in PCL.
+```
+
+安装过程中不会自动开始游玩。若窗口报错，先处理错误再重跑安装脚本；已下载且校验正确的文件会复用。
+
+如果提示找不到 `python`，打开仓库目录的终端，用 Python 的实际路径运行，例如：
+
+```powershell
+.\SETUP-EldenCraft-PCL.cmd -PythonCommand "C:\Python312\python.exe"
+```
+
+安装成功后，PCL 游戏目录中应出现：
+
+```text
+D:\PCL\.minecraft\versions\EldenCraft-26.3-Fabric-0.19.5\
+├─ EldenCraft-26.3-Fabric-0.19.5.json
+├─ java\bin\javaw.exe
+└─ mods\
+   ├─ eldencraft-bridge-0.25.5-pcl.2.jar
+   └─ fabric-api-0.161.0+26.3.jar
+```
+
+如果自动下载上游发布包失败，可以手动下载固定的 [EldenCraft-0.25.5-windows-x64.zip](https://github.com/SocketByte/EldenCraft/releases/download/v0.25.5/EldenCraft-0.25.5-windows-x64.zip)，解压到 `trials\EldenCraft-0.25.5` 后重跑安装。该目录下应直接看到 `release-manifest.json` 和 `payload`，不要再多套一层同名文件夹。其他依赖仍由脚本自动下载。
+
+## 第三步：每次怎么启动
+
+**每次按下面的顺序启动，首次安装完成后也一样。不要先手动打开两款游戏。**
+
+1. **登录 Steam。** 等 Steam 登录完成；保持 Steam 运行，关闭现有 Minecraft、法环和 PCL 窗口。
+2. **双击本仓库根目录的 `START-EldenCraft-PCL.cmd`。** 脚本检查组件、备份存档，并打开 PCL。保持脚本窗口打开。
+3. **在 PCL 确认选中的版本是 `EldenCraft-26.3-Fabric-0.19.5`，然后点击“启动游戏”。** 如果没有自动选中，在 PCL 的版本选择里选择它。无需再下载一个同名 MC 版本。
+4. **等待 MC 和法环启动。** MC 会自动创建或进入专用世界；脚本检测到桥接加载后，会自动启动法环。MC 首次加载、Steam 冷启动可能需要等待。
+5. **在自动打开的法环窗口中进入游戏。** 载入独立 `EldenCraft.sl2` 中的角色，或首次创建新角色。进入世界后保持法环窗口在前台，使用桥接游玩。
+
+完整顺序为：**Steam 登录 → 双击 START → PCL 点击启动 → MC 加载 → 法环自动打开 → 载入/创建角色**。
+
+默认使用独立存档，你原版 `ER0000.sl2` 中的角色不会自动出现在这里。常规游玩使用 **`START`** 入口，**`SETUP`** 仅用于安装、补齐组件或更新；不要直接运行上游的 `EldenCraft.cmd`，它走的是上游启动流程。
+
+如果 PCL 提示 Java 不兼容，在该版本的设置中选择安装器提供的 **Java 25**，路径为：
+
+```text
+<PCL目录>\.minecraft\versions\EldenCraft-26.3-Fabric-0.19.5\java\bin\javaw.exe
+```
+
+如果 GPU 模式画面异常，退出两款游戏和 PCL，重新双击 **`START-EldenCraft-PCL-CPU.cmd`**，其余步骤相同。结束游玩时先分别保存退出两款游戏，再关闭启动脚本窗口。
+
+## 游戏按键
 
 | 按键 | 操作 |
 | --- | --- |
@@ -81,7 +160,7 @@ F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当�
 | F8 | Steve / 原生法环人物切换，需法环窗口在前台 |
 | F6 | 人物切换备用键 |
 
-GPU 画面异常时退出两款游戏和 PCL，改用 **`START-EldenCraft-PCL-CPU.cmd`**。两端须使用同一种传输模式。
+## 启动排错命令
 
 只校验配置和文件、不启动游戏：
 
@@ -89,11 +168,13 @@ GPU 画面异常时退出两款游戏和 PCL，改用 **`START-EldenCraft-PCL-CP
 .\START-EldenCraft-PCL.cmd -Mode check
 ```
 
-Steam 尚未就绪导致法环启动失败时，可以保持专用 MC 世界打开，登录 Steam 后执行：
+如果 MC 已启动但 Steam 尚未就绪导致法环退出，可以保持专用 MC 世界打开，关闭残留法环进程，登录 Steam 后从仓库根目录的终端执行：
 
 ```powershell
 .\START-EldenCraft-PCL.cmd -HostOnly
 ```
+
+`-HostOnly` 只补启动法环。使用 CPU 传输模式时，应运行 `START-EldenCraft-PCL-CPU.cmd -HostOnly`，保证两端模式一致。
 
 ## 血条与配置
 
