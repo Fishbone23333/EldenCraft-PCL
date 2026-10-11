@@ -22,13 +22,16 @@ F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当�
 
 系统要求：**Windows 10（内部版本 19041 或以上）或 Windows 11，64 位**。两款游戏会同时运行；首次安装和下载资源需要联网，游玩桥接使用离线单人模式。
 
-### 需要自己下载或准备的 4 项
+### 需要下载或准备的 5 项（含 Minecraft 版本）
+
+**我的世界使用 Minecraft Java Edition `26.3`，搭配 Fabric Loader `0.19.5`。** 运行下面的安装步骤时，脚本会自动下载这个版本；你只需在启动时选择 **`EldenCraft-26.3-Fabric-0.19.5`** 实例。
 
 | 项目 | 使用版本 / 文件 | 下载入口 | 下载后怎么处理 |
 | --- | --- | --- | --- |
 | 本仓库 | `main` 分支，包含 **`0.25.5-pcl.2`** 优化 JAR | [直接下载 EldenCraft-PCL-main.zip](https://github.com/Fishbone23333/EldenCraft-PCL/archive/refs/heads/main.zip) | 完整解压，例如放到 `D:\Games\EldenCraft-PCL-main` |
 | 艾尔登法环 | **Steam Windows 版**；当前适配的 `eldenring.exe` **产品版本为 `2.7.1.0`** | [Steam 商店](https://store.steampowered.com/app/1245620/ELDEN_RING/) | 在 Steam 安装游戏，记住 `Game\eldenring.exe` 的路径 |
 | PCL 启动器 | 本机验证版本 **`2.13.1.1`**，推荐使用相同版本 | [PCL 官方下载入口](https://meloong.com/pcl) | 放在独立目录，例如 `D:\PCL`；脚本要求文件名为 `Plain Craft Launcher 2.exe` |
+| 我的世界 | **Minecraft Java Edition `26.3` + Fabric Loader `0.19.5`** | 运行本仓库的 `SETUP-EldenCraft-PCL.cmd`，由脚本从 Mojang / Fabric 自动下载 | 安装后在 PCL 选择 **`EldenCraft-26.3-Fabric-0.19.5`**；无需自己在 PCL 下载页另装，也不能用基岩版或 Java `1.21.1` 替代 |
 | Python | 推荐 **`3.12.10`，Windows 64 位**；脚本最低支持 3.12 | [Python 3.12.10 64 位安装器](https://www.python.org/ftp/python/3.12.10/python-3.12.10-amd64.exe) | 安装时勾选 **Add python.exe to PATH**，然后点击 Install Now |
 
 **版本核对：**法环的 `2.7.1.0` 是 Windows 文件“属性 → 详细信息 → 产品版本”，不是要求标题画面显示相同数字。脚本还会验证 EXE 的 SHA256；其他法环版本不能直接套用。PCL 官网会更新版本，如果下载的是其他版本，本文的启动流程仍以 `2.13.1.1` 为验证基准，其他版本尚未逐一验证。
