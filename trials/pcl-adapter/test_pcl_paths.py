@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import runpy
 import shutil
@@ -19,7 +20,8 @@ class PortablePathsTests(unittest.TestCase):
 
     def test_relative_paths_follow_repository_including_spaces(self):
         with tempfile.TemporaryDirectory(prefix="EldenCraft PCL ") as folder:
-            root = Path(folder)
+            # Windows TEMP can use an 8.3 alias (RUNNER~1); the adapter resolves it.
+            root = Path(folder).resolve()
             values = self.load_paths(root, {"pcl_root": "Launcher", "data_root": "Data"})
             self.assertEqual(values["PCL"], root / "Launcher")
             self.assertEqual(values["DATA"], root / "Data")
@@ -28,12 +30,35 @@ class PortablePathsTests(unittest.TestCase):
 
     def test_absolute_paths_are_not_rebased(self):
         with tempfile.TemporaryDirectory() as folder:
-            root = Path(folder)
+            root = Path(folder).resolve()
             values = self.load_paths(root / "repo", {"pcl_root": str(root / "launcher"),
                 "release_root": str(root / "official"), "data_root": str(root / "runtime")})
             self.assertEqual(values["PCL"], root / "launcher")
             self.assertEqual(values["RELEASE"], root / "official")
             self.assertEqual(values["DATA"], root / "runtime")
+
+    @unittest.skipUnless(os.name == "nt", "Windows short-path aliases")
+    def test_windows_short_path_resolves_to_same_configured_folder(self):
+        import ctypes
+        from ctypes import wintypes
+
+        short_path = ctypes.WinDLL("kernel32", use_last_error=True).GetShortPathNameW
+        short_path.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+        short_path.restype = wintypes.DWORD
+        with tempfile.TemporaryDirectory(prefix="EldenCraft PCL short path ") as folder:
+            root = Path(folder).resolve()
+            launcher = root / "Launcher Folder"
+            launcher.mkdir()
+            size = short_path(str(launcher), None, 0)
+            self.assertGreater(size, 0, "Windows can obtain configured folder alias")
+            buffer = ctypes.create_unicode_buffer(size)
+            self.assertGreater(short_path(str(launcher), buffer, size), 0)
+            alias = Path(buffer.value)
+            if alias == launcher:
+                self.skipTest("8.3 aliases disabled on this volume")
+            values = self.load_paths(root / "repo", {"pcl_root": str(alias)})
+            self.assertEqual(values["PCL"], launcher)
+            self.assertTrue(values["PCL"].samefile(alias))
 
     def test_stamina_migration_preserves_other_rules_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as folder:

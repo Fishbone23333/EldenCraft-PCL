@@ -33,7 +33,7 @@ F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当�
 1. 下载仓库 ZIP 并解压，或运行：
 
    ```powershell
-   git clone https://github.com/Fishbone23333/-.git EldenCraft-PCL
+   git clone https://github.com/Fishbone23333/EldenCraft-PCL.git
    cd EldenCraft-PCL
    ```
 
