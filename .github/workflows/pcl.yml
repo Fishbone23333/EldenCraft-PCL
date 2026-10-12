@@ -23,3 +23,6 @@ jobs:
       - name: Test F8 helper
         shell: powershell
         run: ./trials/pcl-adapter/test-character-switch.ps1
+      - name: Test world profile selection and save isolation
+        shell: powershell
+        run: ./trials/pcl-adapter/test-world-profiles.ps1

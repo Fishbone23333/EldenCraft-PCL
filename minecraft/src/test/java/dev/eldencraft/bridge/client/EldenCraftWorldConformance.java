@@ -37,14 +37,14 @@ public final class EldenCraftWorldConformance {
     }
 
     @Override
-    public void create() {
-      calls.add("create:EldenCraft");
+    public void create(String folder) {
+      calls.add("create:" + folder);
     }
   }
 
   public static void main(String[] args) throws Exception {
     checks += AchievementToastsConformance.verify();
-    for (var name : List.of("EldenCraft", "EldenCraft Passthrough Lab")) {
+    for (var name : List.of("EldenCraft", "EldenCraft Passthrough Lab", "EldenCraft - new-character")) {
       check(WorldStartupSafety.owns(true, false, 0, name), "Protect startup before a player joins");
       check(
           WorldStartupSafety.owns(true, false, 1, name), "Protect first launch and reopened saves");
@@ -128,6 +128,40 @@ public final class EldenCraftWorldConformance {
     check(rejected, "Let vanilla report a world-loading failure");
     failedLoad.tick(true, false, broken);
     check(broken.calls.size() == 1, "A failed load must not loop or replace the existing save");
+
+    var separate = new Saves("EldenCraft", "EldenCraft Passthrough Lab", "Survival");
+    new EldenCraftWorld.Startup(null, null, "NEW-Character").tick(true, false, separate);
+    check(
+        separate.calls.equals(List.of("create:EldenCraft - new-character")),
+        "A new profile creates its own world even when older worlds exist");
+    var profileExisting = new Saves("EldenCraft", "EldenCraft - new-character");
+    var profileStartup = new EldenCraftWorld.Startup(null, null, "new-character");
+    profileStartup.tick(true, false, profileExisting);
+    profileStartup.tick(true, false, profileExisting);
+    check(
+        profileExisting.calls.equals(List.of("open:EldenCraft - new-character")),
+        "Reopen only the selected profile, once per launch");
+    var missingProfile = new Saves("EldenCraft");
+    new EldenCraftWorld.Startup(null, "0", "new-character").tick(true, false, missingProfile);
+    check(missingProfile.calls.isEmpty(), "Missing profiles never fall back to another character");
+    var defaultProfile = new Saves("EldenCraft");
+    new EldenCraftWorld.Startup(null, null, "default").tick(true, false, defaultProfile);
+    check(defaultProfile.calls.equals(List.of("open:EldenCraft")), "default keeps the original save");
+    check(EldenCraftWorld.profileFolder(null).equals("EldenCraft"), "No profile preserves compatibility");
+    for (String invalid : List.of("../old", "a/b", "a\\b", "CON:", "a b", "_a", "a".repeat(41))) {
+      boolean refused = false;
+      try {
+        new EldenCraftWorld.Startup(null, null, invalid);
+      } catch (IllegalArgumentException expected) {
+        refused = true;
+      }
+      check(refused, "Reject unsafe profile paths: " + invalid);
+    }
+    check(!EldenCraftWorld.supportedName("EldenCraft - ../old"), "Protection excludes invalid profiles");
+    check(!EldenCraftWorld.supportedName("EldenCraft - "), "Protection excludes an empty profile");
+    check(
+        EldenCraftWorld.settings("EldenCraft - new-character").levelName().equals("EldenCraft - new-character"),
+        "Profile worlds keep their name across restart and retain staging protections");
 
     var settings = EldenCraftWorld.settings();
     check(settings.levelName().equals("EldenCraft"), "The save uses the dedicated world name");

@@ -3,6 +3,8 @@ param(
     [switch]$CpuFrames,
     [switch]$GuestOnly,
     [switch]$HostOnly,
+    [switch]$SelectWorld,
+    [string]$WorldProfile,
     [int]$StartupTimeoutSeconds = 600
 )
 $ErrorActionPreference = 'Stop'
@@ -11,9 +13,19 @@ $adapterMode = $Mode
 $adapterCpuFrames = $CpuFrames
 $trialRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot 'paths.ps1')
+. (Join-Path $PSScriptRoot 'world-profiles.ps1')
+if ($HostOnly -and ($SelectWorld -or $PSBoundParameters.ContainsKey('WorldProfile'))) {
+    throw 'World selection requires both games and PCL to be closed. Do not use -HostOnly.'
+}
+if ($SelectWorld -and $PSBoundParameters.ContainsKey('WorldProfile')) {
+    throw 'Use either -SelectWorld or -WorldProfile.'
+}
 $adapterPaths = Read-PclPaths
 $releaseRoot = $adapterPaths.release_root
 $dataRoot = $adapterPaths.data_root
+$selectedWorld = if ($PSBoundParameters.ContainsKey('WorldProfile')) {
+    ConvertTo-WorldProfile $WorldProfile
+} else { Read-WorldProfile $dataRoot }
 $runtime = Join-Path $dataRoot 'runtime'
 $instanceName = 'EldenCraft-26.3-Fabric-0.19.5'
 $pclRoot = $adapterPaths.pcl_root
@@ -67,7 +79,7 @@ try {
     $hostProfile = Get-Content -LiteralPath (Join-Path $runtime 'eldencraft.me3') -Raw
     if ($hostProfile -notmatch '(?m)^savefile\s*=\s*"EldenCraft.sl2"\s*$' -or $hostProfile -notmatch '(?m)^start_online\s*=\s*false\s*$') { throw 'The me3 profile must use the separate EldenCraft.sl2 save and offline mode.' }
     Assert-FileHash (Join-Path $runtime 'ReShade64.asi') $deps.reshade.runtime_sha256
-    if ($Mode -eq 'check') { Write-Host ('PASS: PCL instance, shared campaign, native DLLs, bridge JAR and Elden Ring executable verified. Transport: ' + $(if ($CpuFrames) { 'CPU' } else { 'GPU' })); return }
+    if ($Mode -eq 'check') { Write-Host ('PASS: PCL instance, shared campaign, native DLLs, bridge JAR and Elden Ring executable verified. World profile: ' + $selectedWorld + '. Transport: ' + $(if ($CpuFrames) { 'CPU' } else { 'GPU' })); return }
     $lock = [IO.File]::Open((Join-Path $dataRoot 'setup.lock'), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::ReadWrite, [IO.FileShare]::None)
     if ($HostOnly) {
         if (Get-Process -Name eldenring,start_protected_game -ErrorAction SilentlyContinue) { throw 'Close Elden Ring before restarting the host.' }
@@ -83,6 +95,9 @@ try {
     if (-not $HostOnly) {
         New-VerifiedBackup (Join-Path $instance 'saves') $backups 'minecraft-pcl' | Out-Null
         New-VerifiedBackup (Join-Path $runtime 'data/campaign') $backups 'campaign' | Out-Null
+        if ($SelectWorld) { $selectedWorld = Select-WorldProfile $instance $selectedWorld }
+        Save-WorldProfile $dataRoot $selectedWorld
+        Write-Host "Minecraft world profile: $selectedWorld. Load its matching Elden Ring character."
     }
     if (-not $HostOnly) {
     $pclIni = Join-Path $minecraftRoot 'PCL.ini'
@@ -95,6 +110,7 @@ try {
     $env:ELDENCRAFT_DATA_DIR = Join-Path $runtime 'data'
     $env:ELDENCRAFT_CAMPAIGN_CONFIG = $link.config
     $env:ELDENCRAFT_CAMPAIGN_DIR = $link.directory
+    $env:ELDENCRAFT_WORLD_PROFILE = $selectedWorld
     $env:ELDENCRAFT_EXPECTED_SHA256 = $deps.elden_ring.sha256
     $env:RESHADE_BASE_PATH_OVERRIDE = $runtime
     $env:ELDENCRAFT_MELEE_LAB = '1'

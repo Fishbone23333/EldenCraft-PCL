@@ -1,5 +1,6 @@
 package dev.eldencraft.bridge.client;
 
+import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.registries.Registries;
@@ -20,12 +21,25 @@ public final class EldenCraftWorld {
   private static final org.slf4j.Logger LOG =
       org.slf4j.LoggerFactory.getLogger("eldencraft_bridge");
   private static final Startup STARTUP =
-      new Startup(System.getenv("ELDENCRAFT_AUTO_WORLD"), System.getenv("ELDENCRAFT_CREATE_WORLD"));
+      new Startup(
+          System.getenv("ELDENCRAFT_AUTO_WORLD"),
+          System.getenv("ELDENCRAFT_CREATE_WORLD"),
+          System.getenv("ELDENCRAFT_WORLD_PROFILE"));
 
   private EldenCraftWorld() {}
 
   static boolean supportedName(String name) {
-    return NAME.equals(name) || LEGACY_NAME.equals(name);
+    return NAME.equals(name)
+        || LEGACY_NAME.equals(name)
+        || (name != null && name.matches("EldenCraft - [a-z0-9][a-z0-9_-]{0,39}"));
+  }
+
+  static String profileFolder(String profile) {
+    if (profile == null || profile.isBlank()) return NAME;
+    String key = profile.trim().toLowerCase(Locale.ROOT);
+    if (!key.matches("[a-z0-9][a-z0-9_-]{0,39}"))
+      throw new IllegalArgumentException("Invalid EldenCraft world profile: " + profile);
+    return key.equals("default") ? NAME : NAME + " - " + key;
   }
 
   interface Worlds {
@@ -33,16 +47,22 @@ public final class EldenCraftWorld {
 
     void open(String folder);
 
-    void create();
+    void create(String folder);
   }
 
   static final class Startup {
     private final boolean disabled, create;
+    private final String folder;
     private boolean attempted;
 
     Startup(String automatic, String creation) {
+      this(automatic, creation, null);
+    }
+
+    Startup(String automatic, String creation, String profile) {
       disabled = "0".equals(automatic);
       create = !"0".equals(creation);
+      folder = profileFolder(profile);
     }
 
     void tick(boolean titleReady, boolean inWorld, Worlds worlds) {
@@ -54,21 +74,25 @@ public final class EldenCraftWorld {
       if (!titleReady) return;
       // Consume startup before handing control to vanilla's asynchronous world-loading screens.
       attempted = true;
-      if (worlds.exists(NAME)) {
-        worlds.open(NAME);
-      } else if (worlds.exists(LEGACY_NAME)) {
+      if (worlds.exists(folder)) {
+        worlds.open(folder);
+      } else if (folder.equals(NAME) && worlds.exists(LEGACY_NAME)) {
         worlds.open(LEGACY_NAME);
       } else if (create) {
-        worlds.create();
+        worlds.create(folder);
       } else {
-        LOG.warn("World '{}' is missing and automatic creation is disabled.", NAME);
+        LOG.warn("World '{}' is missing and automatic creation is disabled.", folder);
       }
     }
   }
 
   static LevelSettings settings() {
+    return settings(NAME);
+  }
+
+  static LevelSettings settings(String folder) {
     return new LevelSettings(
-        NAME,
+        folder,
         GameType.SURVIVAL,
         new LevelSettings.DifficultySettings(Difficulty.NORMAL, false, false),
         true,
@@ -99,13 +123,13 @@ public final class EldenCraftWorld {
           }
 
           @Override
-          public void create() {
-            LOG.info("Creating and opening the dedicated '{}' survival world.", NAME);
+          public void create(String folder) {
+            LOG.info("Creating and opening the dedicated '{}' survival world.", folder);
             client
                 .createWorldOpenFlows()
                 .createFreshLevel(
-                    NAME,
-                    settings(),
+                    folder,
+                    settings(folder),
                     options(),
                     registries ->
                         registries

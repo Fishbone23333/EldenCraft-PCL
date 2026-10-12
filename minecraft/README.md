@@ -70,6 +70,7 @@ specialist native screens retain their original input and rendering.
 
 - `ELDENCRAFT_AUTO_WORLD=0`: disable automatic world opening.
 - `ELDENCRAFT_CREATE_WORLD=0`: disable first-run creation while allowing an existing world to open.
+- `ELDENCRAFT_WORLD_PROFILE=role2`: open/create `EldenCraft - role2`, separately from the original world. Unset or `default` keeps the original `EldenCraft` world (including legacy fallback). Profiles use 1–40 ASCII letters/digits/`-`/`_`, start with a letter or digit and normalize to lowercase. Each world remains paired with its own Elden Ring character.
 - `ELDENCRAFT_GUEST_RESOLUTION=window`: keep the Minecraft window's resolution.
 - `ELDENCRAFT_FRAME_EXPORT=0`: disable frame publication.
 - `config/eldencraft-materials.json` in the instance: terrain-to-block mappings.

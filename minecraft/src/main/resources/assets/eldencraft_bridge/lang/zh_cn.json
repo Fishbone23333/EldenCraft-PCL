@@ -1,0 +1,4 @@
+{
+  "eldencraft.pairing.short": "角色与存档不匹配，按 T 查看解决方法",
+  "eldencraft.pairing.details": "[EldenCraft] 当前 MC 世界绑定了另一个法环角色。载入原角色即可继续使用这个世界。若要玩新角色，请保存并退出两款游戏和 PCL，再运行 SELECT-EldenCraft-WORLD.cmd，选择新的世界编号。旧世界的物品和进度会保留，以后启动时请让世界编号与法环角色对应。"
+}

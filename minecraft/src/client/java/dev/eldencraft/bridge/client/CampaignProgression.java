@@ -23,6 +23,7 @@ public final class CampaignProgression {
   private static final String PAIR = "eldencraft.character.";
   private static final String CLAIM = "eldencraft.reward.";
   private static long lastNotice = Long.MIN_VALUE;
+  private static String mismatchCharacter = "";
   private static MinecraftServer lastServer;
   private static boolean deathHandled;
   private static long deathSession;
@@ -63,6 +64,7 @@ public final class CampaignProgression {
       CampaignCombat.reset();
       lastServer = server;
       lastNotice = Long.MIN_VALUE;
+      mismatchCharacter = "";
       deathHandled = false;
     }
     var config = CampaignConfig.current();
@@ -97,21 +99,24 @@ public final class CampaignProgression {
       return;
     }
     var player = server.getPlayerList().getPlayers().getFirst();
+    String pair = PAIR + characterKey(host.character());
+    boolean existingPair = player.entityTags().stream().anyMatch(tag -> tag.startsWith(PAIR));
+    if (existingPair && !player.entityTags().contains(pair)) {
+      CampaignCombat.clear();
+      if (!mismatchCharacter.equals(host.character())) {
+        player.sendSystemMessage(Component.translatable("eldencraft.pairing.details"));
+        mismatchCharacter = host.character();
+        lastNotice = Long.MIN_VALUE;
+      }
+      notice(player, Component.translatable("eldencraft.pairing.short"));
+      return;
+    }
+    mismatchCharacter = "";
     if (!player.level().dimension().equals(SharedWorldBlocks.DIMENSION)) {
       CampaignCombat.clear();
       return;
     }
     deathHandled = false;
-    String pair = PAIR + characterKey(host.character());
-    boolean existingPair = player.entityTags().stream().anyMatch(tag -> tag.startsWith(PAIR));
-    if (existingPair && !player.entityTags().contains(pair)) {
-      CampaignCombat.clear();
-      notice(
-          player,
-          "This Minecraft world is paired with a different Elden Ring character. Open that"
-              + " character or use a separate world.");
-      return;
-    }
     boolean changed = false;
     if (!existingPair) {
       if (!player.addTag(pair)) {
@@ -154,9 +159,13 @@ public final class CampaignProgression {
   }
 
   private static void notice(ServerPlayer player, String text) {
+    notice(player, Component.literal(text));
+  }
+
+  private static void notice(ServerPlayer player, Component text) {
     long now = player.level().getGameTime();
     if (lastNotice == Long.MIN_VALUE || now - lastNotice >= 200) {
-      player.sendOverlayMessage(Component.literal(text));
+      player.sendOverlayMessage(text);
       lastNotice = now;
     }
   }

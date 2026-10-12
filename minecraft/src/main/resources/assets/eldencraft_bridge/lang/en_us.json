@@ -1,3 +1,5 @@
 {
-  "item.eldencraft_bridge.veinwear_painting": "Veinwear"
+  "item.eldencraft_bridge.veinwear_painting": "Veinwear",
+  "eldencraft.pairing.short": "Different character. Press T for help.",
+  "eldencraft.pairing.details": "[EldenCraft] This Minecraft world belongs to another Elden Ring character. Load that character to keep playing here. For a new character, save and close both games and PCL, then run SELECT-EldenCraft-WORLD.cmd and choose a new world profile. Existing items and progress stay in the old world. Use the same profile and character together on later launches."
 }

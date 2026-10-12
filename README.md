@@ -2,7 +2,7 @@
 
 在艾尔登法环里使用 Minecraft 人物、物品栏、方块和战斗系统，通过 **PCL 2** 启动 Minecraft。
 
-当前桥接版本 **`0.25.5-pcl.2`**，基于 [SocketByte/EldenCraft v0.25.5](https://github.com/SocketByte/EldenCraft/releases/tag/v0.25.5)，保留上游原生 DLL，增加 PCL 安装/启动入口和 Minecraft 端优化。这是社区适配版本。
+当前桥接版本 **`0.25.5-pcl.3`**，基于 [SocketByte/EldenCraft v0.25.5](https://github.com/SocketByte/EldenCraft/releases/tag/v0.25.5)，保留上游原生 DLL，增加 PCL 安装/启动入口和 Minecraft 端优化。这是社区适配版本。
 
 ## 改进内容
 
@@ -15,6 +15,7 @@
 | 短拉弓 | 拉弓至少 1 个游戏 tick（约 0.05 秒）即可发射低威力箭；满拉保持正常威力 |
 | 头顶血条 | 普通敌人和 BOSS 显示头顶血条、血量数字和受伤尾段；保留顶部 BOSS 血条 |
 | 人物切换 | 法环窗口前台按 F8 切换 Steve / 原生法环人物，F6 为原生备用键 |
+| 多角色存档 | 为不同法环角色选择独立 MC 世界，保留各自物品、经验和进度；绑定不匹配时显示可读的提示 |
 
 F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当前角色的控制/显示模式，使用独立 `EldenCraft.sl2`，不会加载原版存档中的其他角色。
 
@@ -28,7 +29,7 @@ F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当�
 
 | 项目 | 使用版本 / 文件 | 下载入口 | 下载后怎么处理 |
 | --- | --- | --- | --- |
-| 本仓库 | `main` 分支，包含 **`0.25.5-pcl.2`** 优化 JAR | [直接下载 EldenCraft-PCL-main.zip](https://github.com/Fishbone23333/EldenCraft-PCL/archive/refs/heads/main.zip) | 完整解压，例如放到 `D:\Games\EldenCraft-PCL-main` |
+| 本仓库 | `main` 分支，包含 **`0.25.5-pcl.3`** 优化 JAR | [直接下载 EldenCraft-PCL-main.zip](https://github.com/Fishbone23333/EldenCraft-PCL/archive/refs/heads/main.zip) | 完整解压，例如放到 `D:\Games\EldenCraft-PCL-main` |
 | 艾尔登法环 | **Steam Windows 版**；当前适配的 `eldenring.exe` **产品版本为 `2.7.1.0`** | [Steam 商店](https://store.steampowered.com/app/1245620/ELDEN_RING/) | 在 Steam 安装游戏，记住 `Game\eldenring.exe` 的路径 |
 | PCL 启动器 | 本机验证版本 **`2.13.1.1`**，推荐使用相同版本 | [PCL 官方下载入口](https://meloong.com/pcl) | 放在独立目录，例如 `D:\PCL`；脚本要求文件名为 `Plain Craft Launcher 2.exe` |
 | 我的世界 | **Minecraft Java Edition `26.3` + Fabric Loader `0.19.5`** | 运行本仓库的 `SETUP-EldenCraft-PCL.cmd`，由脚本从 Mojang / Fabric 自动下载 | 安装后在 PCL 选择 **`EldenCraft-26.3-Fabric-0.19.5`**；无需自己在 PCL 下载页另装，也不能用基岩版或 Java `1.21.1` 替代 |
@@ -51,7 +52,7 @@ Python 已安装且为 3.12 或以上时可继续使用。下载的 PCL 程序�
 | Java 运行时 | **Temurin JRE `25.0.4.1+1`，Windows x64** | 脚本下载并复制到专用实例的 `java` |
 | me3 | **`0.13.0`** | 脚本下载，用于离线启动法环 |
 | ReShade | **`6.8.0 Addon`** | 脚本下载并准备画面合成运行组件 |
-| MC 桥接 Mod | **`eldencraft-bridge-0.25.5-pcl.2.jar`** | 本仓库已经包含，脚本校验后安装 |
+| MC 桥接 Mod | **`eldencraft-bridge-0.25.5-pcl.3.jar`** | 本仓库已经包含，脚本校验后安装 |
 
 最终使用的 MC 实例名称是 **`EldenCraft-26.3-Fabric-0.19.5`**。`1.21.1` 等其他 MC 版本不能替代这个实例；本教程使用 PCL 启动，无需另外安装 Prism。
 
@@ -67,9 +68,10 @@ D:\Games\EldenCraft-PCL-main\
 ├─ SETUP-EldenCraft-PCL.cmd       首次安装 / 更新
 ├─ START-EldenCraft-PCL.cmd       日常启动，默认 GPU 模式
 ├─ START-EldenCraft-PCL-CPU.cmd   GPU 画面异常时使用
+├─ SELECT-EldenCraft-WORLD.cmd    新角色 / 切换 MC 世界
 └─ trials\pcl-adapter\
    ├─ local.example.json
-   └─ patches\eldencraft-bridge-0.25.5-pcl.2.jar
+   └─ patches\eldencraft-bridge-0.25.5-pcl.3.jar
 ```
 
 PCL 程序放在另一个目录，例如 `D:\PCL\Plain Craft Launcher 2.exe`。可以先打开 PCL，设置平时使用的 Minecraft 账号，设置完成后关闭 PCL。
@@ -123,7 +125,7 @@ D:\PCL\.minecraft\versions\EldenCraft-26.3-Fabric-0.19.5\
 ├─ EldenCraft-26.3-Fabric-0.19.5.json
 ├─ java\bin\javaw.exe
 └─ mods\
-   ├─ eldencraft-bridge-0.25.5-pcl.2.jar
+   ├─ eldencraft-bridge-0.25.5-pcl.3.jar
    └─ fabric-api-0.161.0+26.3.jar
 ```
 
@@ -137,7 +139,7 @@ D:\PCL\.minecraft\versions\EldenCraft-26.3-Fabric-0.19.5\
 2. **双击本仓库根目录的 `START-EldenCraft-PCL.cmd`。** 脚本检查组件、备份存档，并打开 PCL。保持脚本窗口打开。
 3. **在 PCL 确认选中的版本是 `EldenCraft-26.3-Fabric-0.19.5`，然后点击“启动游戏”。** 如果没有自动选中，在 PCL 的版本选择里选择它。无需再下载一个同名 MC 版本。
 4. **等待 MC 和法环启动。** MC 会自动创建或进入专用世界；脚本检测到桥接加载后，会自动启动法环。MC 首次加载、Steam 冷启动可能需要等待。
-5. **在自动打开的法环窗口中进入游戏。** 载入独立 `EldenCraft.sl2` 中的角色，或首次创建新角色。进入世界后保持法环窗口在前台，使用桥接游玩。
+5. **在自动打开的法环窗口中进入游戏。** 载入独立 `EldenCraft.sl2` 中与当前 MC 世界对应的角色；第一次游玩可以创建新角色。已有角色后再开新角色，请先按下面“新角色与 MC 世界”的步骤选择独立世界。进入世界后保持法环窗口在前台，使用桥接游玩。
 
 完整顺序为：**Steam 登录 → 双击 START → PCL 点击启动 → MC 加载 → 法环自动打开 → 载入/创建角色**。
 
@@ -164,6 +166,41 @@ D:\PCL\.minecraft\versions\EldenCraft-26.3-Fabric-0.19.5\
 | F6 | 人物切换备用键 |
 
 ## 启动排错命令
+
+### 新角色与 MC 世界：出现“角色与存档不匹配”怎么办
+
+**一个 MC 世界绑定一个法环角色。** 在法环中创建新角色不会自动创建新的 MC 世界。旧世界仍保存旧角色的物品、经验、建造和奖励记录，所以桥接会暂停连接，避免把这些数据混给新角色。游戏中的简短提示下方说明可按 **T** 打开 MC 聊天记录阅读；中文界面会显示中文说明。
+
+要继续玩旧角色：在法环载入原来的角色，并选择它原来使用的 MC 世界。原先默认世界的编号为 **`default`**。
+
+要玩新角色，请按以下步骤操作：
+
+1. **分别保存并退出 MC、法环和 PCL。** 不要在游戏运行时更换世界。
+2. **双击 `SELECT-EldenCraft-WORLD.cmd`。** 输入 **`0`**，再输入一个新编号，例如 **`new-character`** 或 **`role2`**。编号使用 1–40 个英文字母、数字、`-`、`_`，以字母或数字开头。大小写统一为小写。
+3. 脚本会记住编号并打开 PCL。在 PCL 启动 **`EldenCraft-26.3-Fabric-0.19.5`**，MC 会创建新的独立世界；已存在的编号会打开对应世界。
+4. 法环自动启动后，**载入你刚创建的新角色**。第一次连接会绑定这个新 MC 世界。
+5. 以后继续玩同一角色时，直接用 `START-EldenCraft-PCL.cmd`。它会记住上次选择的编号；换回旧角色时，再运行 `SELECT-EldenCraft-WORLD.cmd` 并选择 **`default`** 或旧角色对应的编号。
+
+`SELECT` 同时完成世界选择和正常启动，无需再运行一次 `START`。选择器更改的是 MC 世界编号，法环角色仍需你在法环菜单中选择。旧世界会完整保留，不会清空背包、移除绑定或删除存档。
+
+| 编号 | MC 存档目录（专用实例的 `saves` 下） |
+| --- | --- |
+| `default` | `EldenCraft`；只有旧版世界时继续使用 `EldenCraft Passthrough Lab` |
+| `new-character` | `EldenCraft - new-character` |
+| `role2` | `EldenCraft - role2` |
+
+选择记录保存在 **`data_root/world-profile.json`**。如果刚换了世界，务必载入与它对应的法环角色。继续开第三个角色时再用新的编号，不要重复使用已经绑定的编号。
+
+也可以从仓库根目录运行（会记住选择）：
+
+```powershell
+.\START-EldenCraft-PCL.cmd -WorldProfile new-character
+.\START-EldenCraft-PCL.cmd -WorldProfile default
+```
+
+CPU 模式用 `START-EldenCraft-PCL-CPU.cmd -SelectWorld` 打开相同选择菜单。`-HostOnly` 无法更换已打开的 MC 世界。
+
+### 检查文件和补启动法环
 
 只校验配置和文件、不启动游戏：
 
@@ -217,7 +254,7 @@ native/                    上游原生桥接源码
 compositor/                上游画面合成源码
 config/campaign-pcl.json   优化配置样例与回归检查输入
 trials/pcl-adapter/        PCL 安装、路径配置、启动和 F8 程序
-trials/pcl-adapter/patches/ 已编译 pcl.2 JAR 与 SHA256 清单
+trials/pcl-adapter/patches/ 已编译 pcl.3 JAR 与 SHA256 清单
 README.upstream.md         原始上游说明
 ```
 
@@ -236,13 +273,14 @@ PCL 脚本检查：
 cd trials/pcl-adapter
 python -m unittest test_install_pcl test_optimized_bridge test_pcl_paths
 powershell -NoProfile -ExecutionPolicy Bypass -File test-character-switch.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File test-world-profiles.ps1
 ```
 
 原生构建见 [native/README.md](native/README.md)，PCL 安装直接使用上游发布包的原生组件。
 
 ## 验证范围与排错
 
-本地 `pcl.2` 完整 Gradle 构建通过：血条检查 **173 项**，PCL 优化检查 **7064 项**，覆盖镜头、分辨率、遮挡、死亡、过期数据、免费体力、短拉弓和滚轮。安装完整性检查和 Minecraft/Fabric 初始化检查通过。**实际游玩、血条画面和卡顿改善幅度由使用者测试**；CPU 回退也待实机确认。便携安装入口的脚本和路径逻辑已检查，尚未在全新电脑完成整套安装。
+本地 `pcl.3` 完整 Gradle 构建和世界选择回归检查通过；新增世界选择、默认世界兼容和存档隔离检查。血条检查 **173 项**，PCL 优化检查 **7064 项**，覆盖镜头、分辨率、遮挡、死亡、过期数据、免费体力、短拉弓和滚轮。安装完整性检查通过；此前 `pcl.2` 的 Minecraft/Fabric 初始化检查通过，本次未启动游戏。**实际游玩、血条画面和卡顿改善幅度由使用者测试**；CPU 回退也待实机确认。便携安装入口的脚本和路径逻辑已检查，尚未在全新电脑完成整套安装。
 
 - MC 日志：`pcl_root/.minecraft/versions/EldenCraft-26.3-Fabric-0.19.5/logs/latest.log`。
 - 启动/loader 日志：`data_root/logs`；原生运行数据与日志：`data_root/runtime/data`。
