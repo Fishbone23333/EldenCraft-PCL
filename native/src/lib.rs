@@ -49,6 +49,8 @@ mod native_colliders;
 #[cfg(windows)]
 mod native_damage;
 #[cfg(windows)]
+mod enemy_hud;
+#[cfg(windows)]
 mod native_map;
 #[cfg(windows)]
 mod native_teleport;
@@ -124,7 +126,7 @@ fn loader_present() -> bool {
     }
 }
 
-#[cfg(windows)]
+#[cfg(all(windows, not(test)))]
 #[unsafe(no_mangle)]
 /// # Safety
 /// Windows loader entry point; never call it directly.

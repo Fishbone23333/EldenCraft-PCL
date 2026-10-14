@@ -26,16 +26,27 @@ public final class TravelConformance {
     var diagonal = TravelPolicy.input(true, false, true, false, false, false);
     near(Math.hypot(diagonal[0], diagonal[1]), 1, "diagonal input stays bounded");
     var sneak = TravelPolicy.input(true, false, true, false, true, false);
-    near(sneak[0], .294, "diagonal sneak preserves strafe speed");
+    near(sneak[0], -.294, "diagonal sneak uses native screen-left");
     near(sneak[1], .294, "diagonal sneak preserves forward speed");
     var use = TravelPolicy.input(false, true, false, true, true, true);
-    near(use[0], -.0588, "item use and sneak combine");
+    near(use[0], .0588, "item use and sneak combine with native screen-right");
     near(use[1], -.0588, "backward input retains its sign");
     var east = TravelPolicy.horizontal(0, 1, -90);
     near(east[0], 1, "ladder contact probe follows east-facing forward input");
     near(east[1], 0, "east-facing probe has no south component");
     var south = TravelPolicy.horizontal(0, 1, 0);
     near(south[1], 1, "south-facing probe follows forward input");
+    for (int yaw : new int[] {0, 45, 90, 180, 270, -90}) {
+      double angle = Math.toRadians(yaw);
+      var rightInput = TravelPolicy.input(false, false, false, true, false, false);
+      var rightWorld = TravelPolicy.horizontal(rightInput[0], rightInput[1], yaw);
+      near(rightWorld[0], .98 * Math.cos(angle), "native right X at yaw " + yaw);
+      near(rightWorld[1], .98 * Math.sin(angle), "native right Z at yaw " + yaw);
+      var leftInput = TravelPolicy.input(false, false, true, false, false, false);
+      var leftWorld = TravelPolicy.horizontal(leftInput[0], leftInput[1], yaw);
+      near(leftWorld[0], -rightWorld[0], "opposite strafe X at yaw " + yaw);
+      near(leftWorld[1], -rightWorld[1], "opposite strafe Z at yaw " + yaw);
+    }
     check(TravelPolicy.velocity(0, 30, 0), "combined speed bound is inclusive");
     for (double[] v :
         List.of(

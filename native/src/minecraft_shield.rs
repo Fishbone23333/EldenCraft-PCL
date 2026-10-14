@@ -311,6 +311,9 @@ unsafe fn filter(regs: &Registers) {
         return;
     }
     let damage = unsafe { request.add(0x228).cast::<i32>().read_unaligned() };
+    if damage > 0 {
+        crate::footsteps::shield_hit(local, now, false);
+    }
     let skip = |decision: &'static str| {
         if let Ok(mut traces) = HIT_TRACES.try_lock() {
             retain_trace(&mut traces, skipped_trace(damage, decision, permit, now));
@@ -384,6 +387,7 @@ unsafe fn filter(regs: &Registers) {
         .filter(|_| permit_valid)
         .and_then(|p| incoming.and_then(|direction| reduced_damage(damage, p.forward, direction)));
     let breaks = crate::campaign_runtime::guard_breaks();
+    let guard_seq = crate::campaign_runtime::guard_seq();
     let attack_bonus = attack.as_ref().map_or(0., |attack| {
         let id =
             u64::from(attack.handle.selector) | (u64::from(attack.handle.block_id as u32) << 32);
@@ -397,6 +401,9 @@ unsafe fn filter(regs: &Registers) {
         attack_bonus,
     );
     let broken_through = crate::campaign_runtime::guard_breaks() != breaks;
+    crate::footsteps::shield_hit(local, now,
+        filtered == Some(0) && blocking.is_some() && !broken_through
+            && crate::campaign_runtime::guard_seq() > guard_seq);
     let reduced = filtered.or_else(|| {
         (!crate::campaign_runtime::enabled())
             .then_some(blocking)

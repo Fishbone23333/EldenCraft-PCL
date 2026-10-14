@@ -472,6 +472,9 @@ fn guard_absorbed(available: f64, raw: f64, base: f64, per_damage: f64) -> f64 {
 pub fn guard_breaks() -> u64 {
     GUARD_BREAKS.load(Ordering::Acquire)
 }
+pub fn guard_seq() -> u64 {
+    GUARD_SEQ.load(Ordering::Acquire)
+}
 /// Minecraft may acknowledge at most what native published. The cumulative
 /// damage crosses JSON twice, so allow rounding noise; otherwise a value one
 /// ULP high would reject every later block for the rest of the session.

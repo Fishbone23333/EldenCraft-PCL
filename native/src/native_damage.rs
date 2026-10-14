@@ -706,6 +706,7 @@ impl Sink {
             let actual_delta = hp_before.saturating_sub(initial.hp).max(0);
             let mut feedback_dispatched = false;
             if actual_delta > 0 {
+                let gauge_before = if boss { None } else { unsafe { crate::enemy_hud::entry_state(target) } };
                 // Notifications reflect actual loss, including a native clamp.
                 // Neither callee recalculates HP or requests a player attack.
                 request.i32(0x228, actual_delta);
@@ -732,6 +733,9 @@ impl Sink {
                         );
                     }
                     feedback_dispatched = true;
+                    unsafe {
+                        crate::enemy_hud::damaged(target, actual_delta, hp_before, boss, gauge_before);
+                    }
                 }
             }
             // A native reaction can advance scripted death/phase state after

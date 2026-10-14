@@ -2,7 +2,7 @@
 
 在艾尔登法环里使用 Minecraft 人物、物品栏、方块和战斗系统，通过 **PCL 2** 启动 Minecraft。
 
-当前桥接版本 **`0.25.5-pcl.3`**，基于 [SocketByte/EldenCraft v0.25.5](https://github.com/SocketByte/EldenCraft/releases/tag/v0.25.5)，保留上游原生 DLL，增加 PCL 安装/启动入口和 Minecraft 端优化。这是社区适配版本。
+当前桥接版本 **`0.25.5-pcl.4`**，基于 [SocketByte/EldenCraft v0.25.5](https://github.com/SocketByte/EldenCraft/releases/tag/v0.25.5)，包含配套 MC Mod 和修订的原生核心 DLL，保留上游 loader 与画面合成组件。这是社区适配版本。
 
 ## 改进内容
 
@@ -13,7 +13,10 @@
 | 卡顿优化 | 临时状态改为后台写入，合并过期状态，缓存物品属性，减少游戏线程重复工作 |
 | 滚轮切换 | 逐帧采集滚轮，合并最终物品栏位置，避免事件丢失和切换积压 |
 | 短拉弓 | 拉弓至少 1 个游戏 tick（约 0.05 秒）即可发射低威力箭；满拉保持正常威力 |
-| 头顶血条 | 普通敌人和 BOSS 显示头顶血条、血量数字和受伤尾段；保留顶部 BOSS 血条 |
+| 盾牌反馈 | 确认格挡后播放 MC 格挡音效、盾牌受击回弹，抑制本地法环受伤语音；未挡住的伤害照常反馈 |
+| 创造飞行 | 修正飞行横向输入的坐标方向，A/D 与画面左右一致 |
+| R 拾取 | 普通拾取和关闭拾取提示跳过额外的移动等待；开门、进雾等仍保留原生动作处理 |
+| 敌人血条 | 取消 MC 自绘头顶血条，普通敌人使用法环原生血条并匹配第一人称镜头；现有 BOSS 血条保持不变 |
 | 人物切换 | 法环窗口前台按 F8 切换 Steve / 原生法环人物，F6 为原生备用键 |
 | 多角色存档 | 为不同法环角色选择独立 MC 世界，保留各自物品、经验和进度；绑定不匹配时显示可读的提示 |
 
@@ -29,7 +32,7 @@ F8 切到原生法环人物后，体力仍遵循原版规则。切换的是当�
 
 | 项目 | 使用版本 / 文件 | 下载入口 | 下载后怎么处理 |
 | --- | --- | --- | --- |
-| 本仓库 | `main` 分支，包含 **`0.25.5-pcl.3`** 优化 JAR | [直接下载 EldenCraft-PCL-main.zip](https://github.com/Fishbone23333/EldenCraft-PCL/archive/refs/heads/main.zip) | 完整解压，例如放到 `D:\Games\EldenCraft-PCL-main` |
+| 本仓库 | `main` 分支，包含 **`0.25.5-pcl.4`** 优化 JAR | [直接下载 EldenCraft-PCL-main.zip](https://github.com/Fishbone23333/EldenCraft-PCL/archive/refs/heads/main.zip) | 完整解压，例如放到 `D:\Games\EldenCraft-PCL-main` |
 | 艾尔登法环 | **Steam Windows 版**；当前适配的 `eldenring.exe` **产品版本为 `2.7.1.0`** | [Steam 商店](https://store.steampowered.com/app/1245620/ELDEN_RING/) | 在 Steam 安装游戏，记住 `Game\eldenring.exe` 的路径 |
 | PCL 启动器 | 本机验证版本 **`2.13.1.1`**，推荐使用相同版本 | [PCL 官方下载入口](https://meloong.com/pcl) | 放在独立目录，例如 `D:\PCL`；脚本要求文件名为 `Plain Craft Launcher 2.exe` |
 | 我的世界 | **Minecraft Java Edition `26.3` + Fabric Loader `0.19.5`** | 运行本仓库的 `SETUP-EldenCraft-PCL.cmd`，由脚本从 Mojang / Fabric 自动下载 | 安装后在 PCL 选择 **`EldenCraft-26.3-Fabric-0.19.5`**；无需自己在 PCL 下载页另装，也不能用基岩版或 Java `1.21.1` 替代 |
@@ -52,7 +55,8 @@ Python 已安装且为 3.12 或以上时可继续使用。下载的 PCL 程序�
 | Java 运行时 | **Temurin JRE `25.0.4.1+1`，Windows x64** | 脚本下载并复制到专用实例的 `java` |
 | me3 | **`0.13.0`** | 脚本下载，用于离线启动法环 |
 | ReShade | **`6.8.0 Addon`** | 脚本下载并准备画面合成运行组件 |
-| MC 桥接 Mod | **`eldencraft-bridge-0.25.5-pcl.3.jar`** | 本仓库已经包含，脚本校验后安装 |
+| MC 桥接 Mod | **`eldencraft-bridge-0.25.5-pcl.4.jar`** | 本仓库已经包含，脚本校验后安装 |
+| 修订的原生核心 | **`pcl.4` 的 `eldencraft_core.dll`** | 本仓库已包含，安装器备份并替换核心；loader 与 compositor 保留上游版本 |
 
 最终使用的 MC 实例名称是 **`EldenCraft-26.3-Fabric-0.19.5`**。`1.21.1` 等其他 MC 版本不能替代这个实例；本教程使用 PCL 启动，无需另外安装 Prism。
 
@@ -71,7 +75,7 @@ D:\Games\EldenCraft-PCL-main\
 ├─ SELECT-EldenCraft-WORLD.cmd    新角色 / 切换 MC 世界
 └─ trials\pcl-adapter\
    ├─ local.example.json
-   └─ patches\eldencraft-bridge-0.25.5-pcl.3.jar
+   └─ patches\eldencraft-bridge-0.25.5-pcl.4.jar
 ```
 
 PCL 程序放在另一个目录，例如 `D:\PCL\Plain Craft Launcher 2.exe`。可以先打开 PCL，设置平时使用的 Minecraft 账号，设置完成后关闭 PCL。
@@ -125,7 +129,7 @@ D:\PCL\.minecraft\versions\EldenCraft-26.3-Fabric-0.19.5\
 ├─ EldenCraft-26.3-Fabric-0.19.5.json
 ├─ java\bin\javaw.exe
 └─ mods\
-   ├─ eldencraft-bridge-0.25.5-pcl.3.jar
+   ├─ eldencraft-bridge-0.25.5-pcl.4.jar
    └─ fabric-api-0.161.0+26.3.jar
 ```
 
@@ -220,22 +224,9 @@ CPU 模式用 `START-EldenCraft-PCL-CPU.cmd -SelectWorld` 打开相同选择菜�
 
 运行配置位于 `data_root/campaign.json`，修改后重启两款游戏。不要修改上游发布包内的模板，否则完整性检查会失败。
 
-头顶血条设置位于 `hud.enemyBar`：
+`pcl.4` 已取消 MC 自绘头顶血条，安装器将旧配置的 `hud.enemyBar.enabled` 设为 `false`，即使手动改回 `true` 也不会注册旧绘制器。BOSS 血条继续使用原有 `hud.bossBar` 设置。
 
-```json
-{
-  "enabled": true,
-  "width": 88,
-  "height": 7,
-  "headOffset": 0.35,
-  "maxDistance": 32,
-  "showNumbers": true
-}
-```
-
-宽高为 Minecraft GUI 像素；`headOffset` 为目标碰撞体顶部上方的偏移量，单位米。无精确头骨坐标时以碰撞体顶部作为头顶。颜色复用 `hud.bossBar`。
-
-显示范围还受上游原生发布限制：附近约 **16 米**、最多 **16 个目标**。巨大 BOSS 以身体边界判断距离；头顶超出视野时查看顶部 BOSS 血条。死亡、被原生遮挡、离开画面、菜单打开或桥接断开时隐藏。
+普通敌人由法环原生 HUD 绘制：MC 命中会进入原生受伤血条登记，投影使用桥接第一人称镜头。显示时间、位置裁剪和最多 8 个普通敌人槽位仍由法环处理，属于受伤后短时显示，不是所有怪物永久显示。测试时确认法环设置中 HUD 显示已开启，然后在视野内攻击普通敌人；BOSS 沿用原有血条。
 
 ## 存档、更新和回退
 
@@ -243,18 +234,19 @@ CPU 模式用 `START-EldenCraft-PCL-CPU.cmd -SelectWorld` 打开相同选择菜�
 - MC 使用独立实例和世界，安装器拒绝修改未标记的同名实例。
 - 启动前备份法环存档、专用 MC 世界和战役数据，位于 `data_root/backups`。
 - 更换 JAR 时旧版移到 `pcl-optimization-*` 备份目录，首次清零体力前也会备份配置。
+- 更换核心 DLL 前先验证仓库清单，再将旧 DLL 复制到 `pcl-native-*`；不会修改下载的上游发布包。
 - 更新后关闭两款游戏，重新运行安装入口；不要同时放入多个 `eldencraft-bridge*.jar`。
-- 回退时关闭游戏，用备份 JAR 替换当前 JAR，并恢复匹配的 `patches/manifest.json` 和配置。
+- 回退时关闭游戏，恢复同一版本的 JAR、核心 DLL、`patches/manifest.json` 和配置；建议直接恢复完整旧版仓库后重新安装。
 
 ## 源码和构建
 
 ```text
 minecraft/                 MC 桥接源码、Gradle 和回归检查
-native/                    上游原生桥接源码
+native/                    原生桥接源码及格挡、拾取、血条修订
 compositor/                上游画面合成源码
 config/campaign-pcl.json   优化配置样例与回归检查输入
 trials/pcl-adapter/        PCL 安装、路径配置、启动和 F8 程序
-trials/pcl-adapter/patches/ 已编译 pcl.3 JAR 与 SHA256 清单
+trials/pcl-adapter/patches/ 已编译 pcl.4 JAR、核心 DLL 与 SHA256 清单
 README.upstream.md         原始上游说明
 ```
 
@@ -276,20 +268,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File test-character-switch.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File test-world-profiles.ps1
 ```
 
-原生构建见 [native/README.md](native/README.md)，PCL 安装直接使用上游发布包的原生组件。
+原生构建见 [native/README.md](native/README.md)。PCL 安装器使用仓库内已校验的 `eldencraft_core.dll`；loader、compositor 和其它依赖来自上游发布包。自行构建核心后也需更新 `patches/manifest.json` 的 `nativeCore.sha256`。
 
 ## 验证范围与排错
 
-本地 `pcl.3` 完整 Gradle 构建和世界选择回归检查通过；新增世界选择、默认世界兼容和存档隔离检查。血条检查 **173 项**，PCL 优化检查 **7064 项**，覆盖镜头、分辨率、遮挡、死亡、过期数据、免费体力、短拉弓和滚轮。安装完整性检查通过；此前 `pcl.2` 的 Minecraft/Fabric 初始化检查通过，本次未启动游戏。**实际游玩、血条画面和卡顿改善幅度由使用者测试**；CPU 回退也待实机确认。便携安装入口的脚本和路径逻辑已检查，尚未在全新电脑完成整套安装。
+`pcl.4` 运行完整 Gradle 构建与自动回归检查、原生 Rust 检查（492 项），以及 Python 安装完整性、F8、世界选择与存档隔离检查。自动检查覆盖飞行方向、格挡钩子、拾取分类、语音抑制范围和安装校验。**本次没有启动游戏；盾牌声音与动作、拾取时移动和第一人称原生血条画面由使用者实测。** CPU 回退和全新电脑整套安装也仍待实机确认。
 
 - MC 日志：`pcl_root/.minecraft/versions/EldenCraft-26.3-Fabric-0.19.5/logs/latest.log`。
 - 启动/loader 日志：`data_root/logs`；原生运行数据与日志：`data_root/runtime/data`。
 - EXE 校验失败：确认法环版本符合要求，参照上游兼容说明，不要跳过哈希检查。
-- 血条不显示：确认使用 MC 桥接模式、`hud.enemyBar.enabled` 为 true，在近距离无遮挡视野内观察。
+- 普通敌人血条不显示：确认已安装配套 `pcl.4` JAR 与核心 DLL、法环 HUD 显示开启，在视野内攻击普通敌人；不要启用旧 `enemyBar`。检查原生日志的 `Native enemy gauges` 或相关错误。
 - 不能连接：确认仅运行一个桥接实例，两端传输模式一致，并从专用入口启动 PCL。
 
 ## 来源与许可证
 
 上游源码基准：[`0ed8381cb19b46e7f89965deeb3ed9d04a70a58f`](https://github.com/SocketByte/EldenCraft/commit/0ed8381cb19b46e7f89965deeb3ed9d04a70a58f)。感谢 [SocketByte/EldenCraft](https://github.com/SocketByte/EldenCraft)、PCL、Fabric、me3 和 ReShade。
 
-遵循上游 **MIT License**，保留 [LICENSE](LICENSE) 和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。仓库包含源码、适配脚本和桥接 JAR；游戏文件、上游原生发布包和外部依赖通过安装器从原始来源获取。
+遵循上游 **MIT License**，保留 [LICENSE](LICENSE) 和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。仓库包含源码、适配脚本、桥接 JAR 和核心 DLL；游戏文件、上游原生发布包和外部依赖通过安装器从原始来源获取。

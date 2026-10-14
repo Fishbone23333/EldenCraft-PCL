@@ -1,9 +1,18 @@
 {
-  "file": "eldencraft-bridge-0.25.5-pcl.3.jar",
-  "sha256": "b34d832a5c2b03dd67e941afd3070327f83c29610276324790ef58fd7660bf2e",
-  "version": "0.25.5-pcl.3",
+  "file": "eldencraft-bridge-0.25.5-pcl.4.jar",
+  "sha256": "709dadb0835b61fb86d691568743fe7fb03bee11474a8798ce57310067afdd3f",
+  "version": "0.25.5-pcl.4",
   "upstream": "SocketByte/EldenCraft v0.25.5",
   "baseCommit": "0ed8381cb19b46e7f89965deeb3ed9d04a70a58f",
-  "builtAt": "2026-10-12T14:22:05.5013184+08:00",
-  "checks": "Full Gradle build and all conformance suites passed; 78 world startup checks, 28 world selection/save-isolation checks, 10 Python installer/path tests and 9 F8 helper checks. No games launched."
+  "builtAt": "2026-10-14T09:27:21.964781+00:00",
+  "nativeCore": {
+    "file": "eldencraft_core.dll",
+    "sha256": "d49abdf0542207992c10aca0b40e8dcdd039b14f81ff9bcf18c1e343ea3bfd66",
+    "sourceVersion": "0.25.5-pcl.4",
+    "sdkRevision": "59fbd3b3b7daaf14aca47c9f73530493dba6bc79",
+    "toolchain": "Rust 1.99.0 x86_64-pc-windows-gnullvm; llvm-mingw 20261006",
+    "rustflags": "-C target-feature=+crt-static",
+    "eldenRingSha256": "1a3547101327f65d0c76da2f9190ac0aa66871ea42bae2aecc61e11a8b597891"
+  },
+  "checks": "Full Gradle build/conformance, 492 native library tests, 13 Python installer/artifact tests, 9 F8 checks and 28 world-profile checks passed. No games launched; in-game verification by user."
 }

@@ -19,7 +19,6 @@ public final class EldenCraftClient implements ClientModInitializer {
     CampaignHud.initialize();
     ShieldIndicator.initialize();
     CampaignBossHud.initialize();
-    EnemyHealthHud.initialize();
     SharedWorldClient.initialize();
     LabCommands.initialize();
     ProxyCombatClient.initialize();
@@ -49,6 +48,7 @@ public final class EldenCraftClient implements ClientModInitializer {
     ClientTickEvents.START_CLIENT_TICK.register(CampaignInteractions::tick);
     ClientTickEvents.START_CLIENT_TICK.register(HostController::tick);
     ClientTickEvents.START_CLIENT_TICK.register(CampaignBridge::tick);
+    ClientTickEvents.START_CLIENT_TICK.register(ShieldFeedback::tick);
     ClientTickEvents.START_CLIENT_TICK.register(SharedWorldClient::tick);
     ClientTickEvents.START_CLIENT_TICK.register(HealingClient::tick);
     ClientTickEvents.START_CLIENT_TICK.register(HostDamageFeedback::tick);

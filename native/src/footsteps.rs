@@ -3,7 +3,8 @@
 //! The supported executable's four TAE sound paths already skip categories 8
 //! and 9 while Mimic Veil is active. Intercept that same decision and use its
 //! no-sound epilogue for our local player only. No character mimic flags, saved
-//! volume settings, enemy sounds or other sound categories are changed.
+//! volume settings or enemy sounds are changed. Confirmed full shield blocks
+//! additionally suppress the local hit animation's character/voice sound event.
 
 use fromsoftware_shared::program::Program;
 use ilhook::x64::{HookFlags, Registers, hook_closure_jmp_to_ret};
@@ -17,6 +18,21 @@ const LEASE_MS: u64 = 100;
 static INSTALLED: AtomicBool = AtomicBool::new(false);
 static FAULTED: AtomicBool = AtomicBool::new(false);
 static PERMIT: Mutex<Option<Permit>> = Mutex::new(None);
+static BLOCK_VOICE: Mutex<Option<Permit>> = Mutex::new(None);
+const BLOCK_VOICE_MS: u64 = 350;
+
+/// Only a confirmed full MC block grants this brief TAE character-voice lease.
+/// A subsequent open hit cancels it before its own hurt animation is rendered.
+pub fn shield_hit(player: usize, now: u64, fully_blocked: bool) {
+    if let Ok(mut permit) = BLOCK_VOICE.lock() {
+        *permit = fully_blocked.then_some(Permit { player, issued: now });
+    }
+}
+
+fn blocked_voice(permit: Option<Permit>, owner: usize, category: u32, now: u64) -> bool {
+    permit.is_some_and(|p| owner != 0 && owner == p.player && matches!(category, 1 | 7)
+        && now >= p.issued && now - p.issued < BLOCK_VOICE_MS)
+}
 
 #[derive(Clone, Copy)]
 struct Permit {
@@ -135,6 +151,7 @@ pub fn authorize(player: Option<usize>, now: u64) {
 
 pub fn revoke() {
     authorize(None, 0);
+    shield_hit(0, 0, false);
 }
 
 /// # Safety
@@ -164,13 +181,15 @@ pub unsafe fn install() -> Result<(), String> {
                 let suppressed = PERMIT.try_lock().ok().is_some_and(|permit| {
                     permit.is_some_and(|permit| permit.suppresses(owner, category, now))
                 });
-                suppressed.then_some(category)
+                let voice = BLOCK_VOICE.try_lock().ok()
+                    .is_some_and(|permit| blocked_voice(*permit, owner, category, now));
+                (suppressed || voice).then_some(category)
             });
             match result {
                 Ok(Some(category)) => {
                     // The original skip executes `lea eax, [category - 8]`
                     // before its epilogue. Preserve that register result too.
-                    unsafe { (*regs).rax = u64::from(category - 8) };
+                    unsafe { (*regs).rax = u64::from(category.wrapping_sub(8)) };
                     base + site.epilogue
                 }
                 Ok(None) => original,
@@ -198,6 +217,18 @@ pub unsafe fn install() -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn block_voice_is_scoped_to_confirmed_local_hit_and_expires() {
+        let permit = Some(Permit { player: 0x1000, issued: 1000 });
+        for category in 0..16 {
+            assert_eq!(blocked_voice(permit, 0x1000, category, 1001), matches!(category, 1 | 7));
+            assert!(!blocked_voice(permit, 0x2000, category, 1001));
+            assert!(!blocked_voice(None, 0x1000, category, 1001));
+        }
+        for now in [999, 1350, u64::MAX] {
+            assert!(!blocked_voice(permit, 0x1000, 1, now));
+        }
+    }
 
     #[test]
     fn only_the_paired_players_fresh_walk_and_run_sounds_are_suppressed() {

@@ -12,7 +12,7 @@ from pathlib import Path
 import shutil
 import time
 import urllib.request
-from optimized_bridge import install_bridge, configure_free_stamina
+from optimized_bridge import install_bridge, install_native, configure_free_stamina
 from pcl_paths import ADAPTER, TRIALS, RELEASE, DATA, MC, NAME, INSTANCE
 
 ROOT = TRIALS
@@ -126,6 +126,7 @@ def install() -> None:
     mods = INSTANCE / "mods"
     mods.mkdir(exist_ok=True)
     bridge = install_bridge(INSTANCE)
+    native = install_native()
     configure_free_stamina()
     deps = json.loads((RELEASE / "config" / "windows-release.json").read_bytes())
     api = deps["minecraft"]["fabric_api"]
@@ -145,6 +146,7 @@ def install() -> None:
         shutil.copytree(java_source, java_dest)
     (INSTANCE / "options.txt").write_text("autoJump:false\npauseOnLostFocus:false\nfullscreen:false\nrenderDistance:8\nsimulationDistance:5\nmaxFps:60\n", encoding="utf-8") if not (INSTANCE / "options.txt").exists() else None
     evidence = {"upstream": "https://github.com/SocketByte/EldenCraft/releases/tag/v0.25.5", "instance": str(INSTANCE), "verifiedFiles": len(jobs), "downloadedFiles": changed, "libraries": len(base["libraries"]), "bridgeSha256": bridge["sha256"], "bridge": bridge["bridge"]}
+    evidence["native"] = native
     (ROOT / "pcl-adapter" / "install-evidence.json").write_text(json.dumps(evidence, indent=2), encoding="utf-8")
     print(json.dumps(evidence, indent=2), flush=True)
 

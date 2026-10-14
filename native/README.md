@@ -12,6 +12,34 @@ simulation; the host adapts Elden Ring camera, motion, collision, input and dama
 Run these commands from the repository root. Artifacts are written to
 `.local/native-build/release`. Both DLLs link the C runtime statically.
 
+The PCL `pcl.4` package replaces only `eldencraft_core.dll`. Its prebuilt core
+uses Rust 1.99.0 `x86_64-pc-windows-gnullvm` and llvm-mingw 20261006, with
+`RUSTFLAGS=-C target-feature=+crt-static`; it does not require `libunwind.dll`.
+With that toolchain and linker on PATH, build it from the repository root:
+
+```powershell
+$env:RUSTFLAGS = '-C target-feature=+crt-static'
+$env:CARGO_TARGET_X86_64_PC_WINDOWS_GNULLVM_LINKER = 'x86_64-w64-mingw32-clang.exe'
+cargo +1.99.0-x86_64-pc-windows-gnullvm test --manifest-path native/Cargo.toml --target x86_64-pc-windows-gnullvm --lib -- --test-threads=1
+cargo +1.99.0-x86_64-pc-windows-gnullvm build --manifest-path native/Cargo.toml --target x86_64-pc-windows-gnullvm --release -p eldencraft-native --lib
+```
+
+The output is `native/target/x86_64-pc-windows-gnullvm/release/eldencraft_core.dll`.
+Copy it into `trials/pcl-adapter/patches` and update `nativeCore.sha256` in that
+folder's manifest. Keep the verified upstream loader and compositor unchanged.
+The Windows CI also tests/builds the native source using the MSVC toolchain.
+
+The PCL core classifies immediate pickup/OK prompts separately from animated
+door/fog actions. Confirmed full shield blocks suppress local TAE sound categories
+1/7 for at most 350ms; a subsequent positive incoming hit revokes that lease
+before being processed. Other actors and other sound categories retain native
+behavior. Native enemy gauge registration uses RVA `0x76f530`; normal-enemy
+projection at `0x7778b0` receives the active first-person camera during a fresh
+driver permit. Its native lifetime and clipping logic run once per update.
+Boss gauge registration/projection and Minecraft boss HUD ownership are unchanged.
+All native addresses are fingerprinted against the supported executable. These
+changes have automated checks; actual sounds, animations and HUD need game testing.
+
 ## Compatibility and ownership
 
 The SDK revision is `59fbd3b3b7daaf14aca47c9f73530493dba6bc79`. The supported Elden

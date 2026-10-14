@@ -7,4 +7,5 @@
 *.webp binary
 *.gif binary
 *.jar binary
+*.dll binary
 *.zip binary

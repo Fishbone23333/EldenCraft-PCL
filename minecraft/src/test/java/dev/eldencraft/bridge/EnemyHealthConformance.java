@@ -87,8 +87,8 @@ public final class EnemyHealthConformance {
     check(EnemyHealthDisplay.project(head, zero, lens, 40, 40, 88, 7, true) == null,
         "tiny viewport cannot overflow");
     var defaults = CampaignHudConfig.parse(JsonParser.parseString("{}").getAsJsonObject());
-    check(defaults.enemyBar().enabled() && defaults.enemyBar().width() == 88
-        && defaults.enemyBar().showNumbers(), "old campaign files enable head bars");
+    check(!defaults.enemyBar().enabled() && defaults.enemyBar().width() == 88
+        && defaults.enemyBar().showNumbers(), "old campaign files leave native enemy gauges in charge");
     var parsed = CampaignHudConfig.parse(JsonParser.parseString(
         "{\"hud\":{\"enemyBar\":{\"enabled\":false,\"width\":120,\"headOffset\":0.8}}}")
         .getAsJsonObject());

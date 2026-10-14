@@ -392,6 +392,10 @@ pub fn start(module: usize) {
             format!("Minecraft footstep ownership unavailable: {error}"),
         ),
     }
+    match unsafe { crate::enemy_hud::install() } {
+        Ok(()) => log(&tx, "Native enemy gauges: first-person projection installed."),
+        Err(error) => log(&tx, format!("Native enemy gauge camera unavailable: {error}")),
+    }
     // Capture the camera handed to the renderer. Sampling the simulation
     // camera here can pair a newer view with an older host color/depth frame.
     match unsafe { crate::scene_camera::install() } {
@@ -502,6 +506,7 @@ pub fn start(module: usize) {
             if let Ok(mut driver) = render_camera.try_lock()
                 && std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| unsafe {
                     let result = driver.tick();
+                    crate::enemy_hud::authorize_view(result.as_ref().is_ok_and(|status| status.active));
                     crate::scene_camera::capture(result.as_ref().is_ok_and(|status| status.active));
                     result
                 }))

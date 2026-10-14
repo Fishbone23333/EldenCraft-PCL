@@ -38,7 +38,7 @@
       "text": "#ECE2C6"
     },
     "enemyBar": {
-      "enabled": true,
+      "enabled": false,
       "width": 88,
       "height": 7,
       "headOffset": 0.35,

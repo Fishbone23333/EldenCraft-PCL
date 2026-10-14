@@ -81,7 +81,7 @@ public record CampaignHudConfig(
             0xffa08a55,
             0xff281916,
             0xffece2c6),
-        new EnemyBar(true, 88, 7, .35, 32, true),
+        new EnemyBar(false, 88, 7, .35, 32, true),
         true,
         true,
         true);

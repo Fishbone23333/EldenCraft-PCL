@@ -451,7 +451,6 @@ public final class ProxyCombatClient implements ProxyCombatAuthority.Adapter {
       client.hitResult = BlockHitResult.miss(end, Direction.NORTH, BlockPos.containing(end));
       client.crosshairPickEntity = null;
     } finally {
-      EnemyHealthHud.update(fresh(l) ? l.host : null);
       ProxyDebugRenderer.update(client, observed, pickedTarget, fresh(l));
     }
   }
@@ -461,7 +460,6 @@ public final class ProxyCombatClient implements ProxyCombatAuthority.Adapter {
     INTENTS.clear();
     ProxyFeedback.clear();
     ProxyDebugRenderer.clear();
-    EnemyHealthHud.clear();
     OUTBOX.reset();
     MAILBOX.close();
   }

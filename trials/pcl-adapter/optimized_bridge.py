@@ -51,6 +51,39 @@ def install_bridge(instance: Path = INSTANCE) -> dict:
     return {"bridge": str(target), "sha256": expected, "backup": str(backup)}
 
 
+def install_native(runtime: Path | None = None) -> dict:
+    """Verify before replacement; retain upstream payload and the previous core."""
+    runtime = runtime or DATA / "runtime"
+    manifest = ADAPTER / "patches" / "manifest.json"
+    data = json.loads(manifest.read_bytes())["nativeCore"]
+    filename = data["file"]
+    if filename != "eldencraft_core.dll":
+        raise ValueError("Invalid native core manifest filename")
+    artifact = manifest.parent / filename
+    content = artifact.read_bytes()
+    expected = data["sha256"]
+    if hashlib.sha256(content).hexdigest() != expected:
+        raise ValueError("Local native core artifact checksum mismatch")
+    target = runtime / filename
+    # The upstream setup owns creation and marking of this isolated runtime.
+    if not target.is_file() or not (runtime / "eldencraft.me3").is_file():
+        raise RuntimeError("Run setup before installing the native core")
+    if hashlib.sha256(target.read_bytes()).hexdigest() == expected:
+        return {"nativeCore": str(target), "sha256": expected, "backup": None}
+    backup = DATA / "backups" / ("pcl-native-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f"))
+    backup.mkdir(parents=True)
+    shutil.copy2(target, backup / filename)
+    temporary = runtime / (filename + ".installing")
+    try:
+        temporary.write_bytes(content)
+        if hashlib.sha256(temporary.read_bytes()).hexdigest() != expected:
+            raise ValueError("Staged native core checksum mismatch")
+        os.replace(temporary, target)
+    finally:
+        temporary.unlink(missing_ok=True)
+    return {"nativeCore": str(target), "sha256": expected, "backup": str(backup)}
+
+
 def configure_free_stamina() -> str:
     campaign = DATA / "campaign.json"
     original = campaign.read_bytes()
@@ -60,9 +93,10 @@ def configure_free_stamina() -> str:
     data["stamina"].update(guardBase=0, guardPerDamage=0, guardRecovery=0, regenDelaySeconds=0)
     data["hud"]["stamina"]["enabled"] = False
     data["hud"].setdefault("enemyBar", {
-        "enabled": True, "width": 88, "height": 7,
+        "enabled": False, "width": 88, "height": 7,
         "headOffset": .35, "maxDistance": 32, "showNumbers": True,
     })
+    data["hud"]["enemyBar"]["enabled"] = False
     if json.loads(original) != data:
         backup = campaign.with_name("campaign.json.pre-free-stamina-" + datetime.now().strftime("%Y%m%d-%H%M%S-%f") + ".bak")
         backup.write_bytes(original)
@@ -81,5 +115,6 @@ if __name__ == "__main__":
     if int(running.stdout.strip() or "0"):
         raise RuntimeError("Close Minecraft and Elden Ring before installing")
     result = install_bridge()
+    result["native"] = install_native()
     result["campaign"] = configure_free_stamina()
     print(json.dumps(result, indent=2))

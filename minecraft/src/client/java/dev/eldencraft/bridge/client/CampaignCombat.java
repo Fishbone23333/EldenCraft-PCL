@@ -159,13 +159,15 @@ public final class CampaignCombat {
         if (event.blocked()) {
           if (previousGuard != null && owns(player, previousGuard.stack())) {
             var blocks = previousGuard.stack().get(DataComponents.BLOCKS_ATTACKS);
-            if (blocks != null)
+            if (blocks != null) {
+              blocks.onBlocked(player.level(), player);
               blocks.hurtBlockingItem(
                   player.level(),
                   previousGuard.stack(),
                   player,
                   previousGuard.hand(),
                   (float) event.rawDamage());
+            }
           }
         } else {
           if (event.rawDamage() > 0)

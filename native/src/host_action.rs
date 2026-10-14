@@ -35,9 +35,18 @@ const PRESS_TIMEOUT_MS: u64 = 500;
 const ANIMATION_START_MS: u64 = 750;
 const MOVEMENT_SETTLE_MS: u64 = 150;
 
-/// Hand scripted root motion back to Elden Ring before it consumes the R latch.
-/// The startup window covers the event/behavior delay; release requires stable
-/// native movement permission, rather than guessing a door/fog animation length.
+/// Paramdex ER ActionButtonParam names: pickups and their OK prompt have no
+/// door/fog root motion. Unknown actions keep the conservative animation gate.
+fn immediate_pickup(param: Option<i32>) -> bool {
+    param.is_some_and(|id| matches!(id,
+        1000 | 4000 | 4100 | 4110 | 4200..=4202 | 4250..=4253 |
+        4260 | 4270 | 4280 | 4350 | 4400 | 6361 |
+        7800 | 7810..=7828 | 7850 | 7860..=7878 |
+        207800 | 207810..=207844 | 207850 | 207860..=207894 | 209210 | 209524))
+}
+
+/// Hand scripted root motion back before an animated action consumes R.
+/// Immediate pickups never start this gate or wait for movement to settle.
 #[derive(Default)]
 struct MovementGate {
     started: Option<u64>,
@@ -289,10 +298,15 @@ impl Driver {
         };
         match decide(offer) {
             Decision::Press => {
-                self.movement.start(now);
+                let reserve = !immediate_pickup(offer.param);
+                if reserve {
+                    self.movement.start(now);
+                } else {
+                    self.movement = MovementGate::default();
+                }
                 self.movement_player = unsafe { eldenring::cs::PlayerIns::local_player() }
                     .map_or(0, |p| p as *const _ as usize);
-                MOVEMENT_RESERVED.store(true, Ordering::Release);
+                MOVEMENT_RESERVED.store(reserve, Ordering::Release);
                 unsafe { std::ptr::write_volatile(manager.add(PRESSED), 1) };
                 self.press = Some((now, offer.text, offer.selection));
                 self.events.push_back(format!(
@@ -472,5 +486,19 @@ mod tests {
             !gate.observe(1001, true),
             "an unconsumed withdrawn latch cannot retain movement"
         );
+    }
+    #[test]
+    fn pickup_and_popup_ok_have_no_reserved_movement() {
+        for param in [1000, 4000, 4100, 4200, 4252, 4400, 7817, 7825, 207820] {
+            assert!(immediate_pickup(Some(param)));
+            let mut gate = MovementGate::default();
+            assert!(!gate.observe(0, false));
+            assert!(!gate.observe(16, false));
+            assert!(!gate.observe(500, false));
+        }
+        for param in [5000, 5010, 6000, 6100, 6101, 7200, 7201, 9230] {
+            assert!(!immediate_pickup(Some(param)), "scripted action {param}");
+        }
+        assert!(!immediate_pickup(None));
     }
 }

@@ -52,7 +52,7 @@ try {
     if (-not (Test-Path -LiteralPath (Join-Path $instance '.ma-eldencraft-pcl'))) { throw 'Run pcl-adapter/install_pcl.py to install the dedicated PCL instance first.' }
     $metadata = Get-Content -LiteralPath (Join-Path $instance "$instanceName.json") -Raw | ConvertFrom-Json
     if ($metadata.clientVersion -ne '26.3' -or $metadata.javaVersion.majorVersion -ne 25 -or $metadata.mainClass -ne 'net.fabricmc.loader.impl.launch.knot.KnotClient') { throw 'Unexpected PCL Minecraft/Fabric/Java metadata.' }
-    foreach ($relative in @('eldencraft_native.dll', 'eldencraft_core.dll', 'addons/EldenCraftCompositor.addon64')) {
+    foreach ($relative in @('eldencraft_native.dll', 'addons/EldenCraftCompositor.addon64')) {
         Assert-FileHash (Join-Path $runtime $relative) (Get-FileHash -LiteralPath (Join-Path $releaseRoot "payload/$relative") -Algorithm SHA256).Hash
     }
     $bridgeManifest = Join-Path $PSScriptRoot 'patches/manifest.json'
@@ -61,7 +61,11 @@ try {
         if ([IO.Path]::GetFileName($bridgeBuild.file) -ne $bridgeBuild.file -or $bridgeBuild.file -notlike '*.jar') { throw 'Invalid local bridge manifest filename.' }
         Assert-FileHash (Join-Path $PSScriptRoot ('patches/' + $bridgeBuild.file)) $bridgeBuild.sha256
         Assert-FileHash (Join-Path $instance ('mods/' + $bridgeBuild.file)) $bridgeBuild.sha256
+        if ($bridgeBuild.nativeCore.file -cne 'eldencraft_core.dll') { throw 'Invalid native core manifest filename.' }
+        Assert-FileHash (Join-Path $PSScriptRoot ('patches/' + $bridgeBuild.nativeCore.file)) $bridgeBuild.nativeCore.sha256
+        Assert-FileHash (Join-Path $runtime $bridgeBuild.nativeCore.file) $bridgeBuild.nativeCore.sha256
     } else {
+        Assert-FileHash (Join-Path $runtime 'eldencraft_core.dll') (Get-FileHash -LiteralPath (Join-Path $releaseRoot 'payload/eldencraft_core.dll') -Algorithm SHA256).Hash
         Assert-FileHash (Join-Path $instance 'mods/eldencraft-bridge-0.25.5.jar') (Get-FileHash -LiteralPath (Join-Path $releaseRoot 'payload/eldencraft-bridge.jar') -Algorithm SHA256).Hash
     }
     if (@(Get-ChildItem -LiteralPath (Join-Path $instance 'mods') -Filter 'eldencraft-bridge*.jar').Count -ne 1) { throw 'The PCL instance must contain exactly one EldenCraft bridge JAR.' }
@@ -117,7 +121,7 @@ try {
     $env:ELDENCRAFT_NATIVE_COLLIDERS = '1'
     $env:ELDENCRAFT_NATIVE_MOBS = '1'
     $env:ELDENCRAFT_GPU_TRANSPORT = if ($CpuFrames) { '0' } else { '1' }
-    # The unmodified native host validates each F8 command on its game task
+    # The native host validates each F8 command on its game task
     # and restores character visibility, camera, input and HUD on handoff.
     $env:ELDENCRAFT_FILE_CONTROL = '1'
     $guestLog = Join-Path $instance 'logs/latest.log'

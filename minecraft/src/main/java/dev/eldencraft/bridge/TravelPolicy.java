@@ -22,7 +22,9 @@ public final class TravelPolicy {
       boolean right,
       boolean sneak,
       boolean usingItem) {
-    double x = (left ? 1 : 0) - (right ? 1 : 0);
+    // The native world keeps ER coordinates. Its screen-right is reflected
+    // relative to vanilla's yaw basis (the same reflection as ProxyView).
+    double x = (right ? 1 : 0) - (left ? 1 : 0);
     double z = (forward ? 1 : 0) - (back ? 1 : 0);
     double length = Math.hypot(x, z);
     if (length == 0) return new double[] {0, 0};

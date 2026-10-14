@@ -75,7 +75,7 @@ class PortablePathsTests(unittest.TestCase):
             self.assertTrue(all(v == 0 for v in updated["stamina"]["costs"].values()))
             self.assertEqual(updated["stamina"]["guardBase"], 0)
             self.assertFalse(updated["hud"]["stamina"]["enabled"])
-            self.assertTrue(updated["hud"]["enemyBar"]["enabled"])
+            self.assertFalse(updated["hud"]["enemyBar"]["enabled"])
             self.assertEqual(updated["progression"], original["progression"])
             self.assertEqual(len(list(data_root.glob("*.bak"))), 1)
             self.assertEqual(json.loads(next(data_root.glob("*.bak")).read_bytes()), original)

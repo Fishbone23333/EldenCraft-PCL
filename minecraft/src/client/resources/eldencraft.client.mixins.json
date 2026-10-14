@@ -7,6 +7,7 @@
     "AchievementToastMixin",
     "AchievementToastAccessor",
     "HostHandsMixin",
+    "ShieldFeedbackMixin",
     "HostPickEntityMixin",
     "TorrentPickMixin",
     "TorrentPushMixin",

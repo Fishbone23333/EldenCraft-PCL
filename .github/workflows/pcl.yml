@@ -26,3 +26,10 @@ jobs:
       - name: Test world profile selection and save isolation
         shell: powershell
         run: ./trials/pcl-adapter/test-world-profiles.ps1
+      - name: Test and build native core
+        shell: powershell
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          cargo +1.99.0 test --manifest-path native/Cargo.toml --lib -- --test-threads=1
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          cargo +1.99.0 build --manifest-path native/Cargo.toml --release -p eldencraft-native --lib

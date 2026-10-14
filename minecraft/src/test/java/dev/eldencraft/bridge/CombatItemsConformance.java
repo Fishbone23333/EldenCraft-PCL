@@ -250,6 +250,11 @@ public final class CombatItemsConformance {
         "net/minecraft/server/level/ServerLevel",
         "addFreshEntity");
     hook("net/minecraft/world/entity/AreaEffectCloud", "tick", "()V");
+    hook("net/minecraft/client/renderer/FirstPersonHandsAndItemsRenderer",
+        "applyItemArmTransform", "(Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/world/entity/HumanoidArm;F)V");
+    calls("net/minecraft/client/renderer/FirstPersonHandsAndItemsRenderer",
+        "submitArmWithItem", "net/minecraft/client/renderer/FirstPersonHandsAndItemsRenderer",
+        "applyItemArmTransform");
     hook(
         "net/minecraft/world/item/ThrowablePotionItem",
         "use",

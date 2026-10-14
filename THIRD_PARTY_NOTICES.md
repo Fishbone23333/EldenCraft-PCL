@@ -11,6 +11,7 @@ the Rust standard library, ReShade SDK and ImGui.
 | ReShade SDK | Graphics add-on interface | [crosire/reshade](https://github.com/crosire/reshade) |
 | ImGui headers | ReShade UI ABI definitions | [ocornut/imgui](https://github.com/ocornut/imgui) |
 | Rust dependencies | Serialization, hashing, hooks and Windows interop | Versions and sources in `native/Cargo.lock` |
+| LLVM / llvm-mingw | Statically linked runtime in the PCL core DLL | [llvm-mingw](https://github.com/mstorsjo/llvm-mingw), notices in [licenses/llvm-mingw.txt](licenses/llvm-mingw.txt) |
 
 The Windows launcher downloads these unmodified components from their official
 distribution endpoints. They retain their own licenses and notices:
